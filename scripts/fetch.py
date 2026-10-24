@@ -1,11 +1,10 @@
-"""Nightly fetch: prices + promos for stores in the user's area -> out/sal.db"""
-import json, os, re, sqlite3, time
+"""Nightly fetch: prices + promos for stores in the user's area -> out/sal.db.gz"""
+import gzip, json, os, re, shutil, sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 import israeli_prices as ilp
 
-# Area: Kiryat Ono + neighbours. Names and CBS settlement codes.
 AREA_NAMES = ["קרית אונו", "גני תקווה", "סביון", "יהוד", "אור יהודה"]
 AREA_CODES = {"2620", "229", "587", "9400", "2400"}
 OUT = Path("out"); OUT.mkdir(exist_ok=True)
@@ -26,7 +25,6 @@ def get_stores(slug):
  except ilp.FileNotFound:
   if slug != "super-pharm":
    raise
- # Super-Pharm: stores file is listed under a different category name
  from israeli_prices.chains import superpharm as sp
  ad = ilp.get_adapter(slug)
  for cat in ["Stores", "StoresFull", "Store", "StoreFull", "store"]:
@@ -53,12 +51,16 @@ def main():
  db_path = OUT / "sal.db"
  if db_path.exists(): db_path.unlink()
  db = sqlite3.connect(db_path)
+ # Normalized: product details stored once, promo details once per promo.
  db.executescript("""
- CREATE TABLE stores(chain, store_id, name, address, city, items INT, promos INT);
- CREATE TABLE prices(chain, store_id, item_code, name, manufacturer, quantity REAL,
- unit, is_weighted INT, price REAL, unit_price REAL, updated TEXT);
- CREATE TABLE promos(chain, store_id, promotion_id, description, start TEXT, end TEXT,
- club TEXT, min_qty REAL, discounted_price REAL, discount_rate REAL, item_code);
+ CREATE TABLE stores(sid INTEGER PRIMARY KEY, chain, store_id, name, address, city, items INT, promos INT);
+ CREATE TABLE products(item_code TEXT PRIMARY KEY, name, manufacturer, quantity REAL,
+  unit, is_weighted INT) WITHOUT ROWID;
+ CREATE TABLE prices(item_code TEXT, sid INT, price REAL, unit_price REAL,
+  PRIMARY KEY(item_code, sid)) WITHOUT ROWID;
+ CREATE TABLE promos(pid INTEGER PRIMARY KEY, sid INT, promotion_id, description,
+  start TEXT, end TEXT, club TEXT, min_qty REAL, discounted_price REAL, discount_rate REAL);
+ CREATE TABLE promo_items(item_code TEXT, pid INT, PRIMARY KEY(item_code, pid)) WITHOUT ROWID;
  """)
  chains = {c.slug: c for c in ilp.list_chains() if c.implemented}
  jobs, errors = [], []
@@ -79,32 +81,38 @@ def main():
    except Exception as e:
     errors.append({"chain": c, "store": s.store_id, "stage": "prices", "error": f"{type(e).__name__}: {str(e)[:120]}"})
     continue
-   db.executemany("INSERT INTO prices VALUES(?,?,?,?,?,?,?,?,?,?,?)", [
-    (chain, st.store_id, i.item_code, i.name, i.manufacturer, d(i.quantity),
-    i.unit_of_measure, int(bool(i.is_weighted)), d(i.price), d(i.unit_price),
-    str(i.price_update_time)) for i in items])
-   prow = []
+   sid = db.execute("INSERT INTO stores(chain,store_id,name,address,city,items,promos) VALUES(?,?,?,?,?,?,?)",
+     (chain, st.store_id, st.name, st.address, st.city, len(items), len(promos))).lastrowid
+   db.executemany("INSERT OR IGNORE INTO products VALUES(?,?,?,?,?,?)", [
+    (i.item_code, i.name, i.manufacturer, d(i.quantity), i.unit_of_measure,
+     int(bool(i.is_weighted))) for i in items])
+   db.executemany("INSERT OR REPLACE INTO prices VALUES(?,?,?,?)", [
+    (i.item_code, sid, d(i.price), d(i.unit_price)) for i in items])
    for p in promos:
-    for it in p.items:
-     prow.append((chain, st.store_id, p.promotion_id, p.description, str(p.start_time),
-        str(p.end_time), p.club_id, d(p.min_qty or it.min_qty),
-        d(p.discounted_price or it.discounted_price),
-        d(p.discount_rate or it.discount_rate), it.item_code))
-   db.executemany("INSERT INTO promos VALUES(?,?,?,?,?,?,?,?,?,?,?)", prow)
-   db.execute("INSERT INTO stores VALUES(?,?,?,?,?,?,?)",
-     (chain, st.store_id, st.name, st.address, st.city, len(items), len(promos)))
+    it0 = p.items[0] if p.items else None
+    g = lambda a: getattr(p, a, None) or (getattr(it0, a, None) if it0 else None)
+    pid = db.execute("INSERT INTO promos(sid,promotion_id,description,start,end,club,min_qty,"
+      "discounted_price,discount_rate) VALUES(?,?,?,?,?,?,?,?,?)",
+      (sid, p.promotion_id, p.description, str(p.start_time), str(p.end_time), p.club_id,
+       d(g("min_qty")), d(g("discounted_price")), d(g("discount_rate")))).lastrowid
+    db.executemany("INSERT OR IGNORE INTO promo_items VALUES(?,?)", [(it.item_code, pid) for it in p.items])
    rows.append({"chain": chain, "he": chains[chain].name_he, "store": st.name,
       "city": st.city, "items": len(items), "promos": len(promos)})
    print("OK", chain, st.name, len(items), len(promos))
- db.executescript("CREATE INDEX ip ON prices(item_code); CREATE INDEX iq ON promos(item_code);")
- db.commit(); db.close()
+ db.commit()
+ db.execute("VACUUM"); db.close()
+
+ gz = OUT / "sal.db.gz"
+ with open(db_path, "rb") as src, gzip.open(gz, "wb", compresslevel=9) as dst:
+  shutil.copyfileobj(src, dst)
+ raw, packed = round(db_path.stat().st_size / 1e6, 1), round(gz.stat().st_size / 1e6, 1)
 
  (OUT / "summary.json").write_text(json.dumps({"run_at": datetime.now(timezone.utc).isoformat(),
-  "stores": rows, "errors": errors}, ensure_ascii=False, indent=1), encoding="utf-8")
- mb = round(db_path.stat().st_size / 1e6, 1)
+  "db_mb": raw, "gz_mb": packed, "stores": rows, "errors": errors},
+  ensure_ascii=False, indent=1), encoding="utf-8")
  s = os.environ.get("GITHUB_STEP_SUMMARY")
  if s:
-  L = [f"## Stores in area: {len(rows)} | DB: {mb}MB", "",
+  L = [f"## Stores in area: {len(rows)} | DB: {raw}MB | gz: {packed}MB", "",
    "| chain | store | city | items | promos |", "|---|---|---|---|---|"]
   L += [f"| {r['he']} | {r['store']} | {r['city']} | {r['items']} | {r['promos']} |" for r in rows]
   if errors:
