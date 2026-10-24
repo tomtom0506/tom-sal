@@ -1,0 +1,128 @@
+{
+ "chain": "stop-market",
+ "name_he": "סטופ מרקט",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "002",
+   "name": "ארנה",
+   "address": "קניון ארנה",
+   "city": "6400",
+   "zip_code": "4655502",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "003",
+   "name": "קריות",
+   "address": "שד ההסתדרות 271",
+   "city": "4000",
+   "zip_code": "2620248",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "004",
+   "name": "יגור",
+   "address": "קיבוץ יגור",
+   "city": "96",
+   "zip_code": "3006500",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "005",
+   "name": "קסטרא",
+   "address": "דרך משה פלימן 8",
+   "city": "4000",
+   "zip_code": "3508418",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "006",
+   "name": "הוד השרון",
+   "address": "רחוב הנגר 24",
+   "city": "9700",
+   "zip_code": "4527713",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "007",
+   "name": "איינשטיין",
+   "address": "רחוב איינשטיין 139",
+   "city": "4000",
+   "zip_code": "3460177",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "008",
+   "name": "סוהו נתניה",
+   "address": "מפי 5",
+   "city": "7400",
+   "zip_code": "4250489",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "010",
+   "name": "ראשון לציון",
+   "address": "ילדי טהרן 7",
+   "city": "8300",
+   "zip_code": "7565843",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "011",
+   "name": "יוקנעם",
+   "address": "רחוב הפטל 1",
+   "city": "240",
+   "zip_code": "2064327",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "012",
+   "name": "יהלום",
+   "address": "שדרות לנטוס 10",
+   "city": "7400",
+   "zip_code": "4276023",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "015",
+   "name": "הזורע",
+   "address": "חוצות הזורע",
+   "city": "250",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  }
+ ]
+}

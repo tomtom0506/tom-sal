@@ -1,0 +1,293 @@
+{
+ "chain": "shuk-hayir",
+ "name_he": "שוק העיר",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "004",
+   "name": "רמות",
+   "address": "שד' גולדן מאיר 255",
+   "city": "4702",
+   "zip_code": "0097733",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "005",
+   "name": "אשקלון צפוני",
+   "address": "א.ת. צפוני , הנחושתן 10",
+   "city": "7100",
+   "zip_code": "0078322",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "006",
+   "name": "אשקלון מכללה",
+   "address": "אלי כהן 19",
+   "city": "7100",
+   "zip_code": "0078323",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "008",
+   "name": "גבעת זאב",
+   "address": "שכונת נווה מנחם , רח' קרדון 10",
+   "city": "3730",
+   "zip_code": "0090940",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "009",
+   "name": "קרית גת",
+   "address": "דרך הדרום 13",
+   "city": "2630",
+   "zip_code": "0082021",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "011",
+   "name": "כפר סבא מזרח",
+   "address": "אלי הורוביץ 26",
+   "city": "6900",
+   "zip_code": "0044500",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "012",
+   "name": "בני ברק כהנמן",
+   "address": "כהנמן 106",
+   "city": "6100",
+   "zip_code": "0051553",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "013",
+   "name": "רמלה רמבלס",
+   "address": "דני מס 21",
+   "city": "8500",
+   "zip_code": "0072402",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "014",
+   "name": "חולון סיירים",
+   "address": "המרכבה 73",
+   "city": "6600",
+   "zip_code": "0058851",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "015",
+   "name": "תימורים",
+   "address": "צומת תימורים, כביש 40 תחנת סדש 0",
+   "city": "163",
+   "zip_code": "0079860",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "016",
+   "name": "אפרת",
+   "address": "זית שמן ,מתחם אפרת סנטר 1",
+   "city": "0",
+   "zip_code": "9045501",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "017",
+   "name": "אשדוד סיטי",
+   "address": "קניון הסיטי שדרות מנחם בגין 0",
+   "city": "70",
+   "zip_code": "0077454",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "018",
+   "name": "נתיבות",
+   "address": "בעלי המלאכה 202",
+   "city": "246",
+   "zip_code": "0080200",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "019",
+   "name": "אור ים",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "021",
+   "name": "רעננה",
+   "address": "אחוזה 128 0",
+   "city": "8700",
+   "zip_code": "0072402",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "022",
+   "name": "בני ברק לייף",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "023",
+   "name": "רמלה נאות שמיר",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "025",
+   "name": "חדרה",
+   "address": "רח' היוצרים , ONE מתחם 1",
+   "city": "6500",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "304",
+   "name": "אונליין - רמות",
+   "address": "https://www.shukcity.co.il/ 0",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "305",
+   "name": "אונליין  - אשקלון צפוני",
+   "address": "https://www.shukcity.co.il/ 0",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "309",
+   "name": "אונליין - קרית גת",
+   "address": "https://www.shukcity.co.il/ 0",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "311",
+   "name": "אונליין - כפר סבא",
+   "address": "https://www.shukcity.co.il/ 0",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "312",
+   "name": "אונליין - בני ברק",
+   "address": "https://www.shukcity.co.il/ 0",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "313",
+   "name": "אונליין - רמלה",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "319",
+   "name": "אונליין - אור ים",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 2,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "322",
+   "name": "אונליין - מגדלי לייף בני ברק",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  }
+ ]
+}

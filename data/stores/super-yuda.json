@@ -1,0 +1,293 @@
+{
+ "chain": "super-yuda",
+ "name_he": "סופר יודה",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "201",
+   "name": "סופר יודה בוגרשוב",
+   "address": "בוגרשוב 9",
+   "city": "5000",
+   "zip_code": "6334201",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "202",
+   "name": "סופר יודה אלנבי",
+   "address": "אלנבי 29",
+   "city": "5000",
+   "zip_code": "6332501",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "203",
+   "name": "סופר יודהנחלת בנימין",
+   "address": "נחלת בנימין 37",
+   "city": "5000",
+   "zip_code": "6516216",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "204",
+   "name": "סופר יודה הרצל",
+   "address": "הרצל 50",
+   "city": "5000",
+   "zip_code": "6515401",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "205",
+   "name": "סופר יודה ישעיהו",
+   "address": "ישעיהו 1",
+   "city": "5000",
+   "zip_code": "6228301",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "206",
+   "name": "סופר יודהדיזנגוף 215",
+   "address": "דיזנגוף 215",
+   "city": "5000",
+   "zip_code": "6311509",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "207",
+   "name": "סופר יודה ריינס",
+   "address": "ריינס 62",
+   "city": "5000",
+   "zip_code": "6458751",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "208",
+   "name": "סופר יודה קינג גורג",
+   "address": "בן ציון 3",
+   "city": "5000",
+   "zip_code": "6428502",
+   "store_type": 1,
+   "bikoret_no": 7,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "209",
+   "name": "סופר יודה אינשטיין",
+   "address": "אינשטיין 9",
+   "city": "5000",
+   "zip_code": "6910109",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "210",
+   "name": "סופר יודה יהודה מכבי",
+   "address": "יהודה מכבי 72",
+   "city": "5000",
+   "zip_code": "6230027",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "211",
+   "name": "סופר יודה בארט",
+   "address": "בארט 6",
+   "city": "5000",
+   "zip_code": "6910409",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "212",
+   "name": "סופר יודה אבן גבירול",
+   "address": "אבן גבירול 73",
+   "city": "5000",
+   "zip_code": "6404601",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "213",
+   "name": "סופר יודה בית אלעל",
+   "address": "בן יהודה 32",
+   "city": "5000",
+   "zip_code": "6380501",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "214",
+   "name": "סופר יודה פינסקר",
+   "address": "פינסקר 59",
+   "city": "5000",
+   "zip_code": "6356818",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "215",
+   "name": "סופר יודהדיזנגוף 100",
+   "address": "דיזנגוף 100",
+   "city": "5000",
+   "zip_code": "6439612",
+   "store_type": 1,
+   "bikoret_no": 7,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "216",
+   "name": "סופר יודה המשתלה",
+   "address": "משה וילנסקי 15",
+   "city": "5000",
+   "zip_code": "6962332",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "217",
+   "name": "סופר יודה כיכר רבין",
+   "address": "פרישמן 77",
+   "city": "5000",
+   "zip_code": "6416503",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "230",
+   "name": "סופר יודה חולון",
+   "address": "גאולים 46",
+   "city": "6600",
+   "zip_code": "5840219",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "231",
+   "name": "סופר יודה אשלים",
+   "address": "התזמורת 29",
+   "city": "8300",
+   "zip_code": "7556104",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "232",
+   "name": "סופר יודה הרצליה",
+   "address": "ויצמן 20",
+   "city": "6400",
+   "zip_code": "4649837",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "233",
+   "name": "סופר יודה רמת השרון",
+   "address": "אוסישקין 43",
+   "city": "2650",
+   "zip_code": "4720904",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "235",
+   "name": "סופר יודה אבן יהודה",
+   "address": "המיסדים 61",
+   "city": "182",
+   "zip_code": "4051133",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "236",
+   "name": "סופר יודה צור יצחק",
+   "address": "נחל צלמון 1",
+   "city": "1345",
+   "zip_code": "4580800",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "237",
+   "name": "סופר יודה געש",
+   "address": "זבוטינסקי 63",
+   "city": "7900",
+   "zip_code": "4959222",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "238",
+   "name": "סופר יודה נוריות",
+   "address": "שער יפו 5",
+   "city": "8300",
+   "zip_code": "7568953",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "241",
+   "name": "סופר יודה סביון",
+   "address": "הנוף 33",
+   "city": "587",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  }
+ ]
+}

@@ -1,0 +1,271 @@
+{
+ "chain": "osher-ad",
+ "name_he": "אושר עד",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "001",
+   "name": "מגדל העמק",
+   "address": "האיצטדיון 11",
+   "city": "874",
+   "zip_code": "2303401",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "003",
+   "name": "גבעת שאול",
+   "address": "בית הדפוס 29",
+   "city": "3000",
+   "zip_code": "9548334",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "005",
+   "name": "קרית ביאליק",
+   "address": "הנס מולר 6, צור שלום",
+   "city": "9500",
+   "zip_code": "2751206",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "006",
+   "name": "כנות",
+   "address": "אדום 24 פארק התעשיות כנות",
+   "city": "2006",
+   "zip_code": "7982500",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "009",
+   "name": "אשדוד",
+   "address": "בעלי המלאכה 4",
+   "city": "70",
+   "zip_code": "7761205",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "010",
+   "name": "פתח תקווה - סגולה",
+   "address": "בן ציון גליס 30",
+   "city": "7900",
+   "zip_code": "4927930",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "011",
+   "name": "בני ברק",
+   "address": "הקישון 11",
+   "city": "6100",
+   "zip_code": "5120314",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "013",
+   "name": "באר שבע",
+   "address": "הקוצר 15 אזור תעשיה עמק שרה",
+   "city": "9000",
+   "zip_code": "8480904",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "014",
+   "name": "חדרה",
+   "address": "המסגר 22 אזה\"ת הצפוני",
+   "city": "6500",
+   "zip_code": "3850169",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "016",
+   "name": "בית שמש - גליל",
+   "address": "מורדי הגיטאות 6",
+   "city": "2610",
+   "zip_code": "9958206",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "018",
+   "name": "ביתר עילית",
+   "address": "בניין דוד 5",
+   "city": "3780",
+   "zip_code": "9056605",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "019",
+   "name": "עפולה",
+   "address": "חיים לסקוב",
+   "city": "7700",
+   "zip_code": "1851056",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "020",
+   "name": "לוד",
+   "address": "בת שבע 1 מתחם טלרד",
+   "city": "7000",
+   "zip_code": "7120101",
+   "store_type": 1,
+   "bikoret_no": 1,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "022",
+   "name": "אשקלון בת הדר",
+   "address": "בת הדר",
+   "city": "7100",
+   "zip_code": "7910300",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "023",
+   "name": "נתניה",
+   "address": "שדרות תום לנטוס",
+   "city": "7400",
+   "zip_code": "4276019",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "024",
+   "name": "תל אביב",
+   "address": "קרמינצקי 3",
+   "city": "5000",
+   "zip_code": "6789903",
+   "store_type": 1,
+   "bikoret_no": 7,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "025",
+   "name": "ראשון לציון",
+   "address": "אצל 26",
+   "city": "8300",
+   "zip_code": "7570630",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "026",
+   "name": "תלפיות",
+   "address": "פייר קניג 26 קניון הדר",
+   "city": "3000",
+   "zip_code": "9346934",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "028",
+   "name": "שמגר",
+   "address": "שמגר 16",
+   "city": "3000",
+   "zip_code": "9446116",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "029",
+   "name": "קרית ים",
+   "address": "גולדה מאיר 2",
+   "city": "9600",
+   "zip_code": "2905737",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "030",
+   "name": "חיפה",
+   "address": "דרך בר יהודה 31",
+   "city": "4000",
+   "zip_code": "3262724",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "031",
+   "name": "כפר סבא",
+   "address": "דרך הים 9",
+   "city": "6900",
+   "zip_code": "4418001",
+   "store_type": 1,
+   "bikoret_no": 7,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "032",
+   "name": "קרית אונו",
+   "address": "שמירה אימבר גדיש 9",
+   "city": "2620",
+   "zip_code": "5510101",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "034",
+   "name": "עד הלום",
+   "address": "תרשיש 1, א.ת. עד הלום",
+   "city": "155",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  }
+ ]
+}

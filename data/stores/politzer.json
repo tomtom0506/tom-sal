@@ -1,0 +1,95 @@
+{
+ "chain": "politzer",
+ "name_he": "פוליצר",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "001",
+   "name": "רמב\"ם",
+   "address": "רמב\"ם 24",
+   "city": "0",
+   "zip_code": "3836339",
+   "store_type": 1,
+   "bikoret_no": 6,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "002",
+   "name": "ויתקין",
+   "address": "דרך הכפר מרכז הכפר",
+   "city": "0",
+   "zip_code": "4020000",
+   "store_type": 1,
+   "bikoret_no": 5,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "003",
+   "name": "קיסריה",
+   "address": "הרקיע  1 סי סנטר",
+   "city": "0",
+   "zip_code": "3070216",
+   "store_type": 1,
+   "bikoret_no": 4,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "004",
+   "name": "ניסן",
+   "address": "יצחק רבין 11",
+   "city": "0",
+   "zip_code": "3824911",
+   "store_type": 1,
+   "bikoret_no": 3,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "005",
+   "name": "כרכור",
+   "address": "הנחילות 2",
+   "city": "0",
+   "zip_code": "3750983",
+   "store_type": 1,
+   "bikoret_no": 2,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "008",
+   "name": "פרדס חנה",
+   "address": "הגלעד 1",
+   "city": "0",
+   "zip_code": "3711967",
+   "store_type": 1,
+   "bikoret_no": 9,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "009",
+   "name": "נתניה",
+   "address": "דודו דותן 10",
+   "city": "0",
+   "zip_code": "4265943",
+   "store_type": 1,
+   "bikoret_no": 8,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  },
+  {
+   "store_id": "011",
+   "name": "אור עקיבא",
+   "address": "מיכאל גלהנשטיין 1",
+   "city": "0",
+   "zip_code": "3061966",
+   "store_type": 1,
+   "bikoret_no": 7,
+   "sub_chain_id": "001",
+   "sub_chain_name": "1"
+  }
+ ]
+}

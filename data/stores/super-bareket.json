@@ -1,0 +1,172 @@
+{
+ "chain": "super-bareket",
+ "name_he": "סופר ברקת",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "002",
+   "name": "יהוד",
+   "address": "התעשייה 29",
+   "city": "9400",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "005",
+   "name": "נס ציונה",
+   "address": "החרש 9",
+   "city": "7200",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "006",
+   "name": "תל אביב",
+   "address": "שלבים 26",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "007",
+   "name": "ראשון לציון בקר",
+   "address": "משה בקר 17",
+   "city": "8300",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "009",
+   "name": "גבעת שמואל",
+   "address": "הזיתים 96",
+   "city": "681",
+   "zip_code": "5401188",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "010",
+   "name": "קיבוץ גלויות",
+   "address": "קיבוץ גלויות 106",
+   "city": "0",
+   "zip_code": "6687758",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "066",
+   "name": "רמלה",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "001",
+   "sub_chain_name": "רשת ברקת"
+  },
+  {
+   "store_id": "008",
+   "name": "ראשון לציון גנים",
+   "address": "הנגבה 24",
+   "city": "8300",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "014",
+   "name": "ת\"א סלמה",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "060",
+   "name": "נס ציונה סנונית",
+   "address": "סנונית 18",
+   "city": "7200",
+   "zip_code": "7411318",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "061",
+   "name": "רמת השרון",
+   "address": "סוקלוב 67",
+   "city": "2650",
+   "zip_code": "4723628",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "062",
+   "name": "חולון",
+   "address": "חיים לנדאו 16",
+   "city": "6600",
+   "zip_code": "5867025",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "063",
+   "name": "רחובות",
+   "address": "יעקב 3",
+   "city": "8400",
+   "zip_code": "7626203",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "065",
+   "name": "גבעת שמואל סיטי",
+   "address": "בן גורין 11 0",
+   "city": "681",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  },
+  {
+   "store_id": "068",
+   "name": "רמת גן",
+   "address": "unknown",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 3,
+   "bikoret_no": 0,
+   "sub_chain_id": "002",
+   "sub_chain_name": "ברקת שכונתי"
+  }
+ ]
+}

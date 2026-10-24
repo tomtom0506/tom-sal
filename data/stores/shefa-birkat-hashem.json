@@ -1,0 +1,249 @@
+{
+ "chain": "shefa-birkat-hashem",
+ "name_he": "שפע ברכת השם",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "001",
+   "name": "כף החיים",
+   "address": "כף החיים 38",
+   "city": "3780",
+   "zip_code": "9053738",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "002",
+   "name": "בן ציון ברוק",
+   "address": "בן ציון ברוק 7",
+   "city": "3780",
+   "zip_code": "9055408",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "003",
+   "name": "עלי הכהן",
+   "address": "עלי הכהן 21",
+   "city": "3000",
+   "zip_code": "9531123",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "005",
+   "name": "החיד\"א",
+   "address": "החיד\"א 11",
+   "city": "3780",
+   "zip_code": "9050811",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "006",
+   "name": "יואל",
+   "address": "יואל 14",
+   "city": "3000",
+   "zip_code": "9526914",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "007",
+   "name": "שדרות האמוראים 45",
+   "address": "שדרות האמוראים 16",
+   "city": "2610",
+   "zip_code": "9922424",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "017",
+   "name": "אגן האיילות ג. זאב",
+   "address": "אגן האיילות 41",
+   "city": "3730",
+   "zip_code": "9093837",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "018",
+   "name": "מעזריטש",
+   "address": "המגיד ממעזריטש 38",
+   "city": "3780",
+   "zip_code": "9056002",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "019",
+   "name": "כנסת יחזקאל",
+   "address": "כנסת יחזקאל 6",
+   "city": "3780",
+   "zip_code": "9054030",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "022",
+   "name": "בן איש חי בית שמש",
+   "address": "בן איש חי 39",
+   "city": "2610",
+   "zip_code": "9942041",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "023",
+   "name": "כהנמן בני ברק",
+   "address": "כהנמן 107",
+   "city": "6100",
+   "zip_code": "5155355",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "026",
+   "name": "בבא סאלי",
+   "address": "בבא סאלי 22",
+   "city": "3780",
+   "zip_code": "9052522",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "028",
+   "name": "ר' עקיבא",
+   "address": "ר' עקיבא 13",
+   "city": "3780",
+   "zip_code": "9050114",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "029",
+   "name": "הרב שך",
+   "address": "הרב שך 34",
+   "city": "3780",
+   "zip_code": "9055353",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "031",
+   "name": "בית וגן",
+   "address": "בית וגן 10",
+   "city": "3000",
+   "zip_code": "9646318",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "032",
+   "name": "תכלת מרדכי",
+   "address": "תכלת מרדכי 1",
+   "city": "3000",
+   "zip_code": "9439601",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "034",
+   "name": "עזרת תורה",
+   "address": "עזרת תורה 28",
+   "city": "3000",
+   "zip_code": "9532030",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "036",
+   "name": "תל ציון",
+   "address": "אהבת ישראל 1",
+   "city": "0",
+   "zip_code": "9083400",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "037",
+   "name": "בן קיסמא בית שמש",
+   "address": "ר' יוסי בן קיסמא 17",
+   "city": "2610",
+   "zip_code": "9957923",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "038",
+   "name": "שמאי אלעד",
+   "address": "שמאי 1",
+   "city": "1309",
+   "zip_code": "4080101",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "039",
+   "name": "מודיעין עילית",
+   "address": "ר' עקיבא 5",
+   "city": "3797",
+   "zip_code": "7183805",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "042",
+   "name": "אופקים",
+   "address": "ז'בוטינסקי 66",
+   "city": "31",
+   "zip_code": "8759001",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  }
+ ]
+}

@@ -1,0 +1,280 @@
+{
+ "run_at": "2026-10-24T14:16:39.399373+00:00",
+ "ok": 25,
+ "total": 31,
+ "results": [
+  {
+   "chain": "shufersal",
+   "name_he": "שופרסל",
+   "family": "self-hosted",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 416,
+   "seconds": 2.0
+  },
+  {
+   "chain": "super-pharm",
+   "name_he": "סופר פארם",
+   "family": "self-hosted",
+   "sector": "pharmacy",
+   "ok": false,
+   "error": "FileNotFound: super-pharm: no Stores file"
+  },
+  {
+   "chain": "wolt",
+   "name_he": "וולט",
+   "family": "self-hosted",
+   "sector": "delivery",
+   "ok": true,
+   "stores": 34,
+   "seconds": 0.8
+  },
+  {
+   "chain": "carrefour",
+   "name_he": "קרפור",
+   "family": "self-hosted",
+   "sector": "supermarket",
+   "ok": false,
+   "error": "timeout"
+  },
+  {
+   "chain": "hatzi-hinam",
+   "name_he": "חצי חינם",
+   "family": "self-hosted",
+   "sector": "supermarket",
+   "ok": false,
+   "error": "PortalError: GET https://shop.hazi-hinam.co.il/Prices -> HTTP 403"
+  },
+  {
+   "chain": "rami-levy",
+   "name_he": "רמי לוי",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 99,
+   "seconds": 2.2
+  },
+  {
+   "chain": "tiv-taam",
+   "name_he": "טיב טעם",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 54,
+   "seconds": 2.0
+  },
+  {
+   "chain": "yochananof",
+   "name_he": "יוחננוף",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 51,
+   "seconds": 2.0
+  },
+  {
+   "chain": "osher-ad",
+   "name_he": "אושר עד",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 24,
+   "seconds": 2.0
+  },
+  {
+   "chain": "dor-alon",
+   "name_he": "דור אלון",
+   "family": "cerberus",
+   "sector": "convenience",
+   "ok": true,
+   "stores": 157,
+   "seconds": 2.3
+  },
+  {
+   "chain": "keshet-teamim",
+   "name_he": "קשת טעמים",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 28,
+   "seconds": 2.0
+  },
+  {
+   "chain": "super-cofix",
+   "name_he": "סופר קופיקס",
+   "family": "cerberus",
+   "sector": "convenience",
+   "ok": true,
+   "stores": 34,
+   "seconds": 1.8
+  },
+  {
+   "chain": "politzer",
+   "name_he": "פוליצר",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 8,
+   "seconds": 2.0
+  },
+  {
+   "chain": "stop-market",
+   "name_he": "סטופ מרקט",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 11,
+   "seconds": 2.0
+  },
+  {
+   "chain": "fresh-market",
+   "name_he": "פרש מרקט",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 46,
+   "seconds": 2.1
+  },
+  {
+   "chain": "salach-dabach",
+   "name_he": "סאלח דבאח",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 12,
+   "seconds": 2.1
+  },
+  {
+   "chain": "super-yuda",
+   "name_he": "סופר יודה",
+   "family": "cerberus",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 26,
+   "seconds": 1.9
+  },
+  {
+   "chain": "yellow",
+   "name_he": "ילו",
+   "family": "cerberus",
+   "sector": "convenience",
+   "ok": true,
+   "stores": 242,
+   "seconds": 2.5
+  },
+  {
+   "chain": "good-pharm",
+   "name_he": "גוד פארם",
+   "family": "bina",
+   "sector": "pharmacy",
+   "ok": true,
+   "stores": 83,
+   "seconds": 1.0
+  },
+  {
+   "chain": "super-bareket",
+   "name_he": "סופר ברקת",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 15,
+   "seconds": 0.9
+  },
+  {
+   "chain": "king-store",
+   "name_he": "קינג סטור",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 48,
+   "seconds": 1.1
+  },
+  {
+   "chain": "maayan-2000",
+   "name_he": "מעיין 2000",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 38,
+   "seconds": 1.1
+  },
+  {
+   "chain": "meshnat-yosef",
+   "name_he": "משנת יוסף",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 4,
+   "seconds": 1.0
+  },
+  {
+   "chain": "shefa-birkat-hashem",
+   "name_he": "שפע ברכת השם",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 22,
+   "seconds": 1.0
+  },
+  {
+   "chain": "shuk-hayir",
+   "name_he": "שוק העיר",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 26,
+   "seconds": 1.0
+  },
+  {
+   "chain": "super-sapir",
+   "name_he": "סופר ספיר",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 130,
+   "seconds": 1.1
+  },
+  {
+   "chain": "zol-vebegadol",
+   "name_he": "זול ובגדול",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 35,
+   "seconds": 0.9
+  },
+  {
+   "chain": "city-market",
+   "name_he": "סיטי מרקט",
+   "family": "bina",
+   "sector": "supermarket",
+   "ok": true,
+   "stores": 71,
+   "seconds": 0.9
+  },
+  {
+   "chain": "victory",
+   "name_he": "ויקטורי",
+   "family": "laib",
+   "sector": "supermarket",
+   "ok": false,
+   "error": "PortalError: GET https://laibcatalog.co.il/webapi/api/getfiles failed after 3 attempts: timed out"
+  },
+  {
+   "chain": "mahsanei-hashuk",
+   "name_he": "מחסני השוק",
+   "family": "laib",
+   "sector": "supermarket",
+   "ok": false,
+   "error": "PortalError: GET https://laibcatalog.co.il/webapi/api/getfiles failed after 3 attempts: timed out"
+  },
+  {
+   "chain": "het-cohen",
+   "name_he": "ח. כהן",
+   "family": "laib",
+   "sector": "supermarket",
+   "ok": false,
+   "error": "PortalError: GET https://laibcatalog.co.il/webapi/api/getfiles failed after 3 attempts: timed out"
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "chain": "meshnat-yosef",
+ "name_he": "משנת יוסף",
+ "last_updated": "None",
+ "stores": [
+  {
+   "store_id": "001",
+   "name": "קיטי מרקט האמוראים 14",
+   "address": "האמוראים 14",
+   "city": "2610",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "002",
+   "name": "קיטי רב חנן 3",
+   "address": "רב חנן 3",
+   "city": "2610",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "003",
+   "name": "קיטי ריש לקיש 5",
+   "address": "ריש לקיש 5",
+   "city": "2610",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  },
+  {
+   "store_id": "004",
+   "name": "קיטי מרקט חריש",
+   "address": "חברותא 13",
+   "city": "0",
+   "zip_code": "0000000",
+   "store_type": 1,
+   "bikoret_no": 0,
+   "sub_chain_id": "000",
+   "sub_chain_name": null
+  }
+ ]
+}
