@@ -16,12 +16,9 @@ jobs:
           python-version: "3.12"
       - run: pip install israeli-prices==0.2.0
       - run: python scripts/fetch.py
-      - name: Publish to data branch
+      - name: Publish to data release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git checkout --orphan data
-          git rm -rq --cached .
-          git add -f out/sal.db out/summary.json
-          git commit -qm "data $(date -u +%F)"
-          git push -f origin data
+          gh release view data >/dev/null 2>&1 || gh release create data --title "data" --notes "nightly data"
+          gh release upload data out/sal.db.gz out/summary.json --clobber
