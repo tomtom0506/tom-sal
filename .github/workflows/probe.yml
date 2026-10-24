@@ -1,0 +1,23 @@
+name: probe-chains
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install israeli-prices==0.2.0
+      - run: python scripts/probe.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data
+          git commit -m "probe: $(date -u +%F)" || echo "no changes"
+          git push
