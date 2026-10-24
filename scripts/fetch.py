@@ -13,11 +13,14 @@ def norm(s):
  s = (s or "").replace("קריית", "קרית").replace("תקוה", "תקווה")
  return re.sub(r"[\"'׳״\-]", " ", s)
 
+# Whole-word match only: "יהוד" must not match "יהודה" (בן יהודה, מחנה יהודה...)
+AREA_RE = re.compile(r"(?<![א-ת])(" + "|".join(AREA_NAMES) + r")(?![א-ת])")
+
 def in_area(st):
- if (st.city or "").strip() in AREA_CODES:
-  return True
- text = norm(f"{st.city} {st.address} {st.name}")
- return any(n in text for n in AREA_NAMES)
+ city = (st.city or "").strip()
+ if city.isdigit() and city != "0":
+  return city in AREA_CODES
+ return bool(AREA_RE.search(norm(f"{city} {st.address} {st.name}")))
 
 def get_stores(slug):
  try:
@@ -114,7 +117,8 @@ def main():
  if s:
   L = [f"## Stores in area: {len(rows)} | DB: {raw}MB | gz: {packed}MB", "",
    "| chain | store | city | items | promos |", "|---|---|---|---|---|"]
-  L += [f"| {r['he']} | {r['store']} | {r['city']} | {r['items']} | {r['promos']} |" for r in rows]
+  c = lambda x: str(x).replace("|", "/")
+  L += [f"| {c(r['he'])} | {c(r['store'])} | {c(r['city'])} | {r['items']} | {r['promos']} |" for r in rows]
   if errors:
    L += ["", f"### Errors ({len(errors)})", ""] + [f"- {e['chain']} {e.get('store','')}: {e['error']}" for e in errors]
   Path(s).write_text("\n".join(L), encoding="utf-8")
