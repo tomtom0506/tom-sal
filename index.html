@@ -104,8 +104,9 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 const CHANGELOG = [
+ ["1.3.0", "28.10.2026", ["ירקות, פירות ומוצרים במשקל: מוצר אחד שמושווה בין כל הרשתות לפי השם", "חיפוש סלחני: מוצא תוצאות גם כשחלק מהמילים לא מופיעות בשם המוצר", "כמות של מוצר במשקל מוצגת בק\"ג"]],
  ["1.2.1", "27.10.2026", ["סריקה חדה יותר: רזולוציה גבוהה, פוקוס רציף ואזור סריקה רחב", "אפשרות לצלם תמונה של הברקוד כשהסריקה החיה לא מצליחה"]],
  ["1.2.0", "27.10.2026", ["סריקת ברקוד במצלמה מתוך תיבת החיפוש", "סימון מבצע שמסתיים היום", "רווח בין המחיר המחוק למחיר במבצע", "מספר גרסה קריא יותר"]],
  ["1.1.1", "27.10.2026", ["תיקון: שכבה כהה כיסתה את המסך וחסמה לחיצות"]],
@@ -151,18 +152,22 @@ async function search() {
  const q = $("q").value.trim();
  if (q.length < 2) { $("res").innerHTML = ""; return; }
  const cat = await catalog(); await files();
- const words = q.split(/\s+/), digits = /^\d{4,}$/.test(q), out = [];
+ const words = q.split(/\s+/).filter(Boolean), digits = /^\d{4,}$/.test(q), full = [], part = [];
  for (const code in cat) {
-  const [n, m] = cat[code];
-  if (digits ? code.includes(q) : words.every(w => (n + " " + (m || "")).includes(w))) out.push(code);
-  if (out.length > 400) break;
+  const [n, m] = cat[code], t = n + " " + (m || "");
+  if (digits) { if (code.includes(q)) full.push(code); continue; }
+  let k = 0; for (const w of words) if (t.includes(w)) k++;
+  if (k === words.length) full.push(code); else if (k > 0) part.push([code, k]);
  }
- const have = c => [...S.sel].filter(s => S.files[s]?.p[c]).length;
- out.sort((a, b) => have(b) - have(a));
+ part.sort((a, b) => b[1] - a[1]);
+ const out = full.length >= 5 ? full : full.concat(part.slice(0, 300).map(x => x[0]));
+ const have = c => [...S.sel].filter(s => cands(c).some(x => S.files[s]?.p[x])).length;
+ const sc = {}; out.forEach(c => sc[c] = have(c));
+ out.sort((a, b) => sc[b] - sc[a] || (b.startsWith("g:") - a.startsWith("g:")) || cat[a][0].length - cat[b][0].length);
  $("res").innerHTML = out.length ? '<div class="box">' + out.slice(0, 30).map(c => {
   const [n, m, qn, u] = cat[c];
   return `<div class="row"><div class="grow"><div class="name">${esc(n)}</div>
-   <div class="sub">${esc(m || "")} ${qn ? esc(qn + " " + (u || "")) : ""} · ב-${have(c)} מתוך ${S.sel.size} סניפים</div></div>
+   <div class="sub">${c.startsWith("g:") ? "כל הרשתות" + (cat[c][4] ? " · במשקל" : "") : esc(m || "") + " " + (qn ? esc(qn + " " + (u || "")) : "")} · ב-${sc[c]} מתוך ${S.sel.size} סניפים</div></div>
    <button class="add" data-add="${esc(c)}">+</button></div>`;
  }).join("") + "</div>" : '<div class="empty">לא נמצא מוצר</div>';
 }
@@ -179,7 +184,7 @@ async function renderBasket() {
  const cat = await catalog(); await files();
  $("bask").innerHTML = "<h2>בסל</h2><div class='box'>" + codes.map(c => `<div class="row">
   <div class="grow"><div class="name">${esc(cat[c]?.[0] || c)}</div><div class="sub">${esc(cat[c]?.[1] || "")}</div></div>
-  <div class="qty"><button data-d="${esc(c)}" data-v="-1">−</button><b>${S.basket[c]}</b><button data-d="${esc(c)}" data-v="1">+</button></div></div>`).join("") + "</div>";
+  <div class="qty"><button data-d="${esc(c)}" data-v="-1">−</button><b>${S.basket[c]}${kg(c) ? ' ק"ג' : ""}</b><button data-d="${esc(c)}" data-v="1">+</button></div></div>`).join("") + "</div>";
  compare(cat);
 }
 $("bask").addEventListener("click", e => {
@@ -196,6 +201,8 @@ function promoUnit(price, pr) {
  return null;
 }
 const TODAY = new Date().toLocaleDateString("sv-SE");
+const cands = c => c.startsWith("g:") ? (S.cat?.[c]?.[5] || []) : [c];
+const kg = c => c.startsWith("g:") && S.cat?.[c]?.[4];
 const isClub = club => !/^\s*0/.test(String(club ?? "0"));
 
 function compare(cat) {
@@ -205,17 +212,22 @@ function compare(cat) {
   if (!f || !st) return null;
   let reg = 0, tot = 0, miss = 0; const lines = [];
   for (const [c, q] of Object.entries(S.basket)) {
-   const p = f.p[c]; if (!p) { miss++; continue; }
-   let best = p[0], why = null;
-   for (const pid of f.l[c] || []) {
-    const pr = f.pr[pid]; if (!pr) continue;
-    const club = isClub(pr[2]); if (club && !S.club) continue;
-    if (q < (pr[3] || 1)) continue;
-    const u = promoUnit(p[0], pr);
-    if (u != null && u > 0 && u < best) { best = u; why = { d: pr[0], club, end: pr[1] }; }
+   let best = null, why = null, regp = null;
+   for (const cc of cands(c)) {
+    const p = f.p[cc]; if (!p || !(p[0] > 0)) continue;
+    let b = p[0], w = null;
+    for (const pid of f.l[cc] || []) {
+     const pr = f.pr[pid]; if (!pr) continue;
+     const club = isClub(pr[2]); if (club && !S.club) continue;
+     if (q < (pr[3] || 1)) continue;
+     const u = promoUnit(p[0], pr);
+     if (u != null && u > 0 && u < b) { b = u; w = { d: pr[0], club, end: pr[1] }; }
+    }
+    if (best === null || b < best) { best = b; why = w; regp = p[0]; }
    }
-   reg += p[0] * q; tot += best * q;
-   lines.push(`<div class="line"><span>${esc(cat[c]?.[0] || c)} ×${q}${why ? `<br><span class="tag ${why.club ? "club" : ""}">${why.club ? "מועדון: " : "מבצע: "}${esc(why.d)}${why.end ? (why.end === TODAY ? ' · <span class="ends">מסתיים היום</span>' : " · עד " + esc(why.end.split("-").reverse().join("."))) : ""}</span>` : ""}</span><b>${ils(best * q)}</b></div>`);
+   if (best === null) { miss++; continue; }
+   reg += regp * q; tot += best * q;
+   lines.push(`<div class="line"><span>${esc(cat[c]?.[0] || c)} ×${q}${kg(c) ? ' ק"ג' : ""}${why ? `<br><span class="tag ${why.club ? "club" : ""}">${why.club ? "מועדון: " : "מבצע: "}${esc(why.d)}${why.end ? (why.end === TODAY ? ' · <span class="ends">מסתיים היום</span>' : " · עד " + esc(why.end.split("-").reverse().join("."))) : ""}</span>` : ""}</span><b>${ils(best * q)}</b></div>`);
   }
   return { st, reg, tot, miss, lines };
  }).filter(Boolean).sort((a, b) => a.miss - b.miss || a.tot - b.tot);
