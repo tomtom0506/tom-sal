@@ -59,6 +59,7 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 #scan.hidden{display:none}
 #reader{width:100%;max-width:420px}
 #scan p{color:#fff;margin:0;font-size:15px;text-align:center}
+#scan .photo{color:#F2C75C;font-size:15px;text-decoration:underline}
 #scan button{background:#fff;color:#000;border:0;border-radius:22px;padding:10px 26px;font:inherit;font-size:16px}
 .price{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;justify-content:flex-end}
 .ends{color:#C0392B;font-weight:700}
@@ -99,12 +100,13 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
  <section id="vs" class="hidden"><div id="stores"></div></section>
 </main>
 <button class="fab" id="refresh">🔄 רענון</button>
-<div id="scan" class="hidden"><p>כוון את המצלמה לברקוד</p><div id="reader"></div><button id="scanx">ביטול</button></div>
+<div id="scan" class="hidden"><p>כוון לברקוד ממרחק 15–20 ס"מ, באור טוב</p><div id="reader"></div><label class="photo">📸 לא מצליח? צלם תמונה של הברקוד<input type="file" id="photo" accept="image/*" capture="environment" hidden></label><button id="scanx">ביטול</button></div><div id="scanfile" hidden></div>
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 const CHANGELOG = [
+ ["1.2.1", "27.10.2026", ["סריקה חדה יותר: רזולוציה גבוהה, פוקוס רציף ואזור סריקה רחב", "אפשרות לצלם תמונה של הברקוד כשהסריקה החיה לא מצליחה"]],
  ["1.2.0", "27.10.2026", ["סריקת ברקוד במצלמה מתוך תיבת החיפוש", "סימון מבצע שמסתיים היום", "רווח בין המחיר המחוק למחיר במבצע", "מספר גרסה קריא יותר"]],
  ["1.1.1", "27.10.2026", ["תיקון: שכבה כהה כיסתה את המסך וחסמה לחיצות"]],
  ["1.1.0", "27.10.2026", ["כפתור רענון שטוען את האפליקציה והנתונים מחדש", "מספר גרסה ויומן גרסאות", "מצב יום ולילה", "מדריך שימוש"]],
@@ -235,15 +237,34 @@ function loadLib() {
 }
 async function stopScan() { try { if (scanner) { await scanner.stop(); scanner.clear(); } } catch {} scanner = null; $("scan").classList.add("hidden"); }
 $("scanx").onclick = stopScan;
+const FORMATS = () => { const F = Html5QrcodeSupportedFormats; return [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128]; };
+// photo fallback: a still photo is far sharper than the live video on iPhone
+function shrink(file, max = 1600) {
+ return new Promise((ok, bad) => { const img = new Image(); img.onload = () => {
+  const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+  c.width = img.width * k; c.height = img.height * k; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  c.toBlob(b => ok(new File([b], "b.jpg", { type: "image/jpeg" })), "image/jpeg", 0.92); URL.revokeObjectURL(img.src);
+ }; img.onerror = bad; img.src = URL.createObjectURL(file); });
+}
+$("photo").onchange = async e => {
+ const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+ await stopScan(); toast("מפענח את התמונה…");
+ try {
+  await loadLib();
+  const r = new Html5Qrcode("scanfile", { formatsToSupport: FORMATS(), verbose: false });
+  const code = await r.scanFile(await shrink(f), false); r.clear(); onBarcode(code.trim());
+ } catch { toast("לא נמצא ברקוד בתמונה. נסה שוב מקרוב ובאור טוב, או הקלד את המספר שמתחת לברקוד."); }
+};
 $("scanb").onclick = async () => {
  $("scan").classList.remove("hidden");
  try {
   await loadLib();
-  const F = Html5QrcodeSupportedFormats;
-  scanner = new Html5Qrcode("reader", { formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128], verbose: false });
-  await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 260, height: 130 } }, async code => {
-   await stopScan(); onBarcode(code.trim());
-  });
+  scanner = new Html5Qrcode("reader", { formatsToSupport: FORMATS(), verbose: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
+  await scanner.start({ facingMode: "environment" }, {
+   fps: 15,
+   qrbox: (w, h) => ({ width: Math.floor(w * 0.9), height: Math.floor(Math.min(h * 0.4, w * 0.5)) }),
+   videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] }
+  }, async code => { await stopScan(); onBarcode(code.trim()); });
  } catch (e) { await stopScan(); toast("לא ניתן לפתוח את המצלמה. אשר גישה למצלמה ב-Safari ונסה שוב."); }
 };
 async function onBarcode(code) {
