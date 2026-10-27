@@ -58,6 +58,7 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 .meta small{color:var(--silver);font-size:12px}
 .fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:6;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:24px;padding:10px 20px;font:inherit;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 #modal{position:fixed;inset:0;z-index:10;background:rgba(5,12,30,.6);display:flex;align-items:flex-end;justify-content:center}
+#modal.hidden{display:none}
 #modal .sheet{background:var(--card);color:var(--text);width:100%;max-width:640px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px)}
 #modal h3{margin:0 0 6px;font-size:19px}
 #modal h4{margin:16px 0 4px;font-size:15px}
@@ -88,8 +89,9 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 <button class="fab" id="refresh">🔄 רענון</button>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 const CHANGELOG = [
+ ["1.1.1", "27.10.2026", ["תיקון: שכבה כהה כיסתה את המסך וחסמה לחיצות"]],
  ["1.1.0", "27.10.2026", ["כפתור רענון שטוען את האפליקציה והנתונים מחדש", "מספר גרסה ויומן גרסאות", "מצב יום ולילה", "מדריך שימוש"]],
  ["1.0.0", "27.10.2026", ["גרסה ראשונה: בחירת סניפים, חיפוש מוצרים, סל, והשוואת מחיר הסל בין הסניפים כולל מבצעים ומבצעי מועדון"]],
 ];
