@@ -39,6 +39,11 @@ def get_stores(slug):
  names = {l.split("?")[0].rsplit("/", 1)[-1][:12] for l in sp._DOWNLOAD_LINK_RE.findall(r.text)}
  raise RuntimeError(f"no stores file; prefixes seen: {sorted(names)}")
 
+def key(chain, code):
+ # Real barcodes are shared across chains; short internal codes (produce, deli) are per chain.
+ code = str(code or "").strip()
+ return code if code.isdigit() and len(code) >= 8 else f"{chain}:{code}"
+
 def d(x):
  return None if x is None else float(x)
 
@@ -87,10 +92,10 @@ def main():
    sid = db.execute("INSERT INTO stores(chain,store_id,name,address,city,items,promos) VALUES(?,?,?,?,?,?,?)",
      (chain, st.store_id, st.name, st.address, st.city, len(items), len(promos))).lastrowid
    db.executemany("INSERT OR IGNORE INTO products VALUES(?,?,?,?,?,?)", [
-    (i.item_code, i.name, i.manufacturer, d(i.quantity), i.unit_of_measure,
+    (key(chain, i.item_code), i.name, i.manufacturer, d(i.quantity), i.unit_of_measure,
      int(bool(i.is_weighted))) for i in items])
    db.executemany("INSERT OR REPLACE INTO prices VALUES(?,?,?,?)", [
-    (i.item_code, sid, d(i.price), d(i.unit_price)) for i in items])
+    (key(chain, i.item_code), sid, d(i.price), d(i.unit_price)) for i in items])
    for p in promos:
     it0 = p.items[0] if p.items else None
     g = lambda a: getattr(p, a, None) or (getattr(it0, a, None) if it0 else None)
@@ -98,7 +103,7 @@ def main():
       "discounted_price,discount_rate) VALUES(?,?,?,?,?,?,?,?,?)",
       (sid, p.promotion_id, p.description, str(p.start_time), str(p.end_time), p.club_id,
        d(g("min_qty")), d(g("discounted_price")), d(g("discount_rate")))).lastrowid
-    db.executemany("INSERT OR IGNORE INTO promo_items VALUES(?,?)", [(it.item_code, pid) for it in p.items])
+    db.executemany("INSERT OR IGNORE INTO promo_items VALUES(?,?)", [(key(chain, it.item_code), pid) for it in p.items])
    rows.append({"chain": chain, "he": chains[chain].name_he, "store": st.name,
       "city": st.city, "items": len(items), "promos": len(promos)})
    print("OK", chain, st.name, len(items), len(promos))
