@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="tom-sal">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0E1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-512.png">
+<title>tom-sal</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0E1F44;--blue:#1F3A6E;--gold:#D9A940;--silver:#C9D1DC;--bg:#F3F5F8;--card:#fff;--text:#14213D;--muted:#6B7689;--line:#E2E6EC;--green:#1B8A5A}
+@media (prefers-color-scheme:dark){:root{--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Heebo,system-ui,-apple-system,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0}
+.top{display:flex;align-items:center;gap:10px}
+.top img{width:34px;height:34px;border-radius:9px}
+.top h1{font-size:20px;margin:0;font-weight:700}
+.top small{margin-inline-start:auto;color:var(--silver);font-size:12px}
+nav{display:flex;margin-top:10px}
+nav button{flex:1;background:none;border:0;color:var(--silver);font:inherit;font-size:16px;padding:10px;border-bottom:3px solid transparent}
+nav button.on{color:#fff;border-color:var(--gold);font-weight:500}
+main{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 30px);max-width:640px;margin:0 auto}
+input[type=search]{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.grow{flex:1;min-width:0}
+.name{font-weight:500}
+.sub{color:var(--muted);font-size:13px}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button,.add{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:18px}
+.add{background:var(--navy);color:#fff;border:0}
+h2{font-size:15px;color:var(--muted);font-weight:500;margin:20px 4px 0}
+.store{padding:14px}
+.store .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.total{font-size:22px;font-weight:700}
+.reg{text-decoration:line-through;color:var(--muted);font-size:14px;margin-inline-end:6px}
+.best{border:2px solid var(--gold)}
+.badge{display:inline-block;background:var(--gold);color:#1a1a1a;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:700;margin-inline-start:6px}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:0 6px;background:#E7F5EE;color:var(--green);margin-top:2px}
+.tag.club{background:#FFF3D6;color:#8A5A00}
+.miss{color:#C0392B;font-size:13px}
+details summary{color:var(--muted);font-size:13px;margin-top:6px}
+.line{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:4px 0;border-top:1px dashed var(--line)}
+label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
+.empty{color:var(--muted);text-align:center;padding:24px 10px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+ <div class="top"><img src="apple-touch-icon.png" alt=""><h1>הסל שלי</h1><small id="upd"></small></div>
+ <nav><button id="tb" class="on">סל</button><button id="ts">סניפים <span id="nsel"></span></button></nav>
+</header>
+<main>
+ <section id="vb">
+  <input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off">
+  <div id="res"></div>
+  <div id="bask"></div>
+  <label class="sw"><input type="checkbox" id="club"> לכלול מבצעי מועדון וכרטיס</label>
+  <div id="cmp"></div>
+ </section>
+ <section id="vs" class="hidden"><div id="stores"></div></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ils = n => "₪" + n.toFixed(2);
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+const S = { stores: [], sel: new Set(load("sel", [])), basket: load("basket", {}), club: load("club", false), cat: null, files: {} };
+$("club").checked = S.club;
+
+async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
+async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); } return S.cat; }
+async function files() {
+ await Promise.all([...S.sel].filter(s => !S.files[s]).map(async s => { S.files[s] = await getJSON(`data/s/${s}.json`); }));
+}
+
+// ---- stores view ----
+function renderStores() {
+ const by = {};
+ S.stores.forEach(s => (by[s.he] ||= []).push(s));
+ $("stores").innerHTML = Object.keys(by).sort((a, b) => a.localeCompare(b, "he")).map(ch =>
+  `<h2>${esc(ch)}</h2><div class="box">` + by[ch].map(s =>
+   `<label class="row"><input type="checkbox" data-sid="${s.sid}" ${S.sel.has(s.sid) ? "checked" : ""}>
+    <div class="grow"><div class="name">${esc(s.name)}</div><div class="sub">${esc(s.address || "")}</div></div></label>`).join("") + "</div>"
+ ).join("");
+ $("nsel").textContent = S.sel.size ? `(${S.sel.size})` : "";
+}
+$("stores").addEventListener("change", e => {
+ const sid = e.target.dataset.sid; if (!sid) return;
+ e.target.checked ? S.sel.add(sid) : S.sel.delete(sid);
+ store("sel", [...S.sel]); $("nsel").textContent = S.sel.size ? `(${S.sel.size})` : "";
+});
+
+// ---- search ----
+let tmr;
+$("q").addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(search, 250); });
+async function search() {
+ const q = $("q").value.trim();
+ if (q.length < 2) { $("res").innerHTML = ""; return; }
+ const cat = await catalog(); await files();
+ const words = q.split(/\s+/), digits = /^\d{4,}$/.test(q), out = [];
+ for (const code in cat) {
+  const [n, m] = cat[code];
+  if (digits ? code.includes(q) : words.every(w => (n + " " + (m || "")).includes(w))) out.push(code);
+  if (out.length > 400) break;
+ }
+ const have = c => [...S.sel].filter(s => S.files[s]?.p[c]).length;
+ out.sort((a, b) => have(b) - have(a));
+ $("res").innerHTML = out.length ? '<div class="box">' + out.slice(0, 30).map(c => {
+  const [n, m, qn, u] = cat[c];
+  return `<div class="row"><div class="grow"><div class="name">${esc(n)}</div>
+   <div class="sub">${esc(m || "")} ${qn ? esc(qn + " " + (u || "")) : ""} · ב-${have(c)} מתוך ${S.sel.size} סניפים</div></div>
+   <button class="add" data-add="${esc(c)}">+</button></div>`;
+ }).join("") + "</div>" : '<div class="empty">לא נמצא מוצר</div>';
+}
+$("res").addEventListener("click", e => {
+ const c = e.target.dataset.add; if (!c) return;
+ S.basket[c] = (S.basket[c] || 0) + 1; store("basket", S.basket);
+ $("q").value = ""; $("res").innerHTML = ""; renderBasket();
+});
+
+// ---- basket + compare ----
+async function renderBasket() {
+ const codes = Object.keys(S.basket);
+ if (!codes.length) { $("bask").innerHTML = '<div class="empty">הסל ריק. חפש מוצר כדי להתחיל.</div>'; $("cmp").innerHTML = ""; return; }
+ const cat = await catalog(); await files();
+ $("bask").innerHTML = "<h2>בסל</h2><div class='box'>" + codes.map(c => `<div class="row">
+  <div class="grow"><div class="name">${esc(cat[c]?.[0] || c)}</div><div class="sub">${esc(cat[c]?.[1] || "")}</div></div>
+  <div class="qty"><button data-d="${esc(c)}" data-v="-1">−</button><b>${S.basket[c]}</b><button data-d="${esc(c)}" data-v="1">+</button></div></div>`).join("") + "</div>";
+ compare(cat);
+}
+$("bask").addEventListener("click", e => {
+ const c = e.target.dataset.d; if (!c) return;
+ S.basket[c] += +e.target.dataset.v; if (S.basket[c] <= 0) delete S.basket[c];
+ store("basket", S.basket); renderBasket();
+});
+$("club").addEventListener("change", e => { S.club = e.target.checked; store("club", S.club); renderBasket(); });
+
+function promoUnit(price, pr) {
+ let [, , , mq, dp, dr] = pr; mq = mq || 1;
+ if (dp != null && dp > 0) return mq > 1 && dp > price ? dp / mq : dp;  // "2 ב-20" = total for min qty
+ if (dr) return price * (1 - (dr > 1 ? dr / 100 : dr));
+ return null;
+}
+const isClub = club => !/^\s*0/.test(String(club ?? "0"));
+
+function compare(cat) {
+ if (!S.sel.size) { $("cmp").innerHTML = '<div class="empty">בחר סניפים בלשונית "סניפים" כדי להשוות.</div>'; return; }
+ const rows = [...S.sel].map(sid => {
+  const f = S.files[sid], st = S.stores.find(s => s.sid === sid);
+  if (!f || !st) return null;
+  let reg = 0, tot = 0, miss = 0; const lines = [];
+  for (const [c, q] of Object.entries(S.basket)) {
+   const p = f.p[c]; if (!p) { miss++; continue; }
+   let best = p[0], why = null;
+   for (const pid of f.l[c] || []) {
+    const pr = f.pr[pid]; if (!pr) continue;
+    const club = isClub(pr[2]); if (club && !S.club) continue;
+    if (q < (pr[3] || 1)) continue;
+    const u = promoUnit(p[0], pr);
+    if (u != null && u > 0 && u < best) { best = u; why = { d: pr[0], club, end: pr[1] }; }
+   }
+   reg += p[0] * q; tot += best * q;
+   lines.push(`<div class="line"><span>${esc(cat[c]?.[0] || c)} ×${q}${why ? `<br><span class="tag ${why.club ? "club" : ""}">${why.club ? "מועדון: " : "מבצע: "}${esc(why.d)}${why.end ? " · עד " + esc(why.end) : ""}</span>` : ""}</span><b>${ils(best * q)}</b></div>`);
+  }
+  return { st, reg, tot, miss, lines };
+ }).filter(Boolean).sort((a, b) => a.miss - b.miss || a.tot - b.tot);
+ const n = Object.keys(S.basket).length;
+ $("cmp").innerHTML = "<h2>השוואה</h2>" + rows.map((r, i) => `<div class="box store ${i === 0 && !r.miss ? "best" : ""}">
+  <div class="t"><div><div class="name">${esc(r.st.he)}${i === 0 && !r.miss ? '<span class="badge">הכי זול</span>' : ""}</div><div class="sub">${esc(r.st.name)}</div></div>
+  <div>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}<span class="total">${ils(r.tot)}</span></div></div>
+  ${r.miss ? `<div class="miss">חסרים ${r.miss} מתוך ${n} פריטים, הסכום לא כולל אותם</div>` : ""}
+  <details><summary>פירוט</summary>${r.lines.join("")}</details></div>`).join("");
+}
+
+function tab(b) { $("vb").classList.toggle("hidden", !b); $("vs").classList.toggle("hidden", b); $("tb").classList.toggle("on", b); $("ts").classList.toggle("on", !b); if (b) renderBasket(); }
+$("tb").onclick = () => tab(true); $("ts").onclick = () => tab(false);
+
+getJSON("data/stores.json").then(d => {
+ S.stores = d.stores; $("upd").textContent = "עודכן " + d.updated.split("-").reverse().join(".");
+ const ok = new Set(S.stores.map(s => s.sid)); S.sel.forEach(s => ok.has(s) || S.sel.delete(s));
+ renderStores(); if (!S.sel.size) tab(false); else renderBasket();
+}).catch(() => { $("bask").innerHTML = '<div class="empty">הנתונים עדיין לא זמינים. נסה שוב אחרי הריצה הלילית.</div>'; });
+</script>
+</body>
+</html>
