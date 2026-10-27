@@ -5,10 +5,18 @@ on:
     - cron: "0 1 * * *"
 permissions:
   contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
 jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -22,3 +30,16 @@ jobs:
         run: |
           gh release view data >/dev/null 2>&1 || gh release create data --title "data" --notes "nightly data"
           gh release upload data out/sal.db.gz out/summary.json --clobber
+      - run: python scripts/export.py
+      - name: Build site
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q librsvg2-bin
+          cp index.html icon.svg site/
+          rsvg-convert -w 512 -h 512 icon.svg -o site/icon-512.png
+          rsvg-convert -w 180 -h 180 icon.svg -o site/apple-touch-icon.png
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
