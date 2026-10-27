@@ -14,7 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--navy:#0E1F44;--blue:#1F3A6E;--gold:#D9A940;--silver:#C9D1DC;--bg:#F3F5F8;--card:#fff;--text:#14213D;--muted:#6B7689;--line:#E2E6EC;--green:#1B8A5A}
-@media (prefers-color-scheme:dark){:root{--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A}}
+:root[data-theme="dark"]{--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Heebo,system-ui,-apple-system,sans-serif}
 header{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0}
@@ -25,7 +26,7 @@ header{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;padding
 nav{display:flex;margin-top:10px}
 nav button{flex:1;background:none;border:0;color:var(--silver);font:inherit;font-size:16px;padding:10px;border-bottom:3px solid transparent}
 nav button.on{color:#fff;border-color:var(--gold);font-weight:500}
-main{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 30px);max-width:640px;margin:0 auto}
+main{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 90px);max-width:640px;margin:0 auto}
 input[type=search]{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text)}
 .box{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:12px;overflow:hidden}
 .row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}
@@ -51,11 +52,27 @@ details summary{color:var(--muted);font-size:13px;margin-top:6px}
 label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 .empty{color:var(--muted);text-align:center;padding:24px 10px}
 .hidden{display:none}
+.hb{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px}
+.ver{background:none;border:0;color:var(--gold);font:inherit;font-size:12px;padding:0}
+.meta{margin-inline-start:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.meta small{color:var(--silver);font-size:12px}
+.fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:6;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:24px;padding:10px 20px;font:inherit;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#modal{position:fixed;inset:0;z-index:10;background:rgba(5,12,30,.6);display:flex;align-items:flex-end;justify-content:center}
+#modal .sheet{background:var(--card);color:var(--text);width:100%;max-width:640px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px)}
+#modal h3{margin:0 0 6px;font-size:19px}
+#modal h4{margin:16px 0 4px;font-size:15px}
+#modal p,#modal li{font-size:15px;line-height:1.6;margin:4px 0}
+#modal .close{float:left;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:50%;width:32px;height:32px;font-size:16px}
+.cl{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
+.cl b{color:var(--gold)}
 </style>
 </head>
 <body>
 <header>
- <div class="top"><img src="apple-touch-icon.png" alt=""><h1>הסל שלי</h1><small id="upd"></small></div>
+ <div class="top"><img src="apple-touch-icon.png" alt=""><h1>הסל שלי</h1>
+  <div class="meta"><button class="ver" id="ver"></button><small id="upd"></small></div>
+  <button class="hb" id="theme" aria-label="מצב יום או לילה">🌙</button>
+  <button class="hb" id="help" aria-label="מדריך">❔</button></div>
  <nav><button id="tb" class="on">סל</button><button id="ts">סניפים <span id="nsel"></span></button></nav>
 </header>
 <main>
@@ -68,7 +85,14 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
  </section>
  <section id="vs" class="hidden"><div id="stores"></div></section>
 </main>
+<button class="fab" id="refresh">🔄 רענון</button>
+<div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
+const VERSION = "1.1.0";
+const CHANGELOG = [
+ ["1.1.0", "27.10.2026", ["כפתור רענון שטוען את האפליקציה והנתונים מחדש", "מספר גרסה ויומן גרסאות", "מצב יום ולילה", "מדריך שימוש"]],
+ ["1.0.0", "27.10.2026", ["גרסה ראשונה: בחירת סניפים, חיפוש מוצרים, סל, והשוואת מחיר הסל בין הסניפים כולל מבצעים ומבצעי מועדון"]],
+];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ils = n => "₪" + n.toFixed(2);
@@ -78,7 +102,7 @@ const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 const S = { stores: [], sel: new Set(load("sel", [])), basket: load("basket", {}), club: load("club", false), cat: null, files: {} };
 $("club").checked = S.club;
 
-async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
+async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
 async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); } return S.cat; }
 async function files() {
  await Promise.all([...S.sel].filter(s => !S.files[s]).map(async s => { S.files[s] = await getJSON(`data/s/${s}.json`); }));
@@ -182,6 +206,46 @@ function compare(cat) {
   ${r.miss ? `<div class="miss">חסרים ${r.miss} מתוך ${n} פריטים, הסכום לא כולל אותם</div>` : ""}
   <details><summary>פירוט</summary>${r.lines.join("")}</details></div>`).join("");
 }
+
+// ---- theme ----
+function applyTheme() {
+ const t = load("theme", null);
+ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+ const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+ $("theme").textContent = dark ? "☀️" : "🌙";
+}
+$("theme").onclick = () => {
+ const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+ store("theme", dark ? "light" : "dark"); applyTheme();
+};
+applyTheme();
+
+// ---- refresh ----
+$("refresh").onclick = () => { $("refresh").textContent = "⏳ מרענן…"; location.replace(location.pathname + "?r=" + Date.now()); };
+
+// ---- modal: changelog + guide ----
+function openModal(html) { $("sheet").innerHTML = '<button class="close" id="mx">✕</button>' + html; $("modal").classList.remove("hidden"); $("mx").onclick = closeModal; }
+function closeModal() { $("modal").classList.add("hidden"); }
+$("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+$("ver").textContent = "v" + VERSION;
+$("ver").onclick = () => openModal("<h3>יומן גרסאות</h3>" + CHANGELOG.map(([v, d, items]) =>
+ `<div class="cl"><b>v${v}</b> <span class="sub">${d}</span><ul>${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join(""));
+$("help").onclick = () => openModal(`<h3>מדריך</h3>
+ <p>האפליקציה משווה כמה יעלה הסל שלך בכל סניף באזור, לפי קובצי המחירים שהרשתות חייבות לפרסם לפי חוק.</p>
+ <h4>1. בחירת סניפים</h4><p>בלשונית "סניפים" מסמנים את הסניפים שאתה קונה בהם או מוכן להגיע אליהם. הבחירה נשמרת בטלפון.</p>
+ <h4>2. בניית סל</h4><p>בלשונית "סל" מחפשים מוצר בשם או במספר ברקוד ולוחצים + . בכל תוצאה מופיע בכמה מהסניפים שבחרת המוצר נמכר. את הכמות משנים עם + ו־−.</p>
+ <h4>3. קריאת ההשוואה</h4><ul>
+  <li>הסניף הזול ביותר מסומן במסגרת זהב ובתג "הכי זול".</li>
+  <li>מחיר מחוק הוא המחיר בלי מבצעים, והמחיר הגדול כולל מבצעים.</li>
+  <li>"חסרים X פריטים" אומר שהסניף לא מוכר חלק מהסל, והסכום שלו לא כולל אותם. סניפים כאלה מוצגים בסוף.</li>
+  <li>בלחיצה על "פירוט" רואים מחיר לכל מוצר ואת תנאי המבצע ותוקפו.</li></ul>
+ <h4>4. מבצעי מועדון</h4><p>כברירת מחדל החישוב כולל רק מבצעים לכל הלקוחות. סמן "לכלול מבצעי מועדון וכרטיס" אם אתה חבר במועדונים.</p>
+ <h4>5. מתי הנתונים מתעדכנים</h4><p>פעם בלילה, בערך ב־03:00–04:00. תאריך העדכון מופיע למעלה. כפתור "רענון" טוען את הגרסה והנתונים העדכניים.</p>
+ <h4>חשוב לדעת</h4><ul>
+  <li>קרפור, סופר־פארם, חצי חינם, ויקטורי, מחסני השוק וח. כהן עדיין לא נכללים.</li>
+  <li>מבצעים מסוג "2 ב־X" מחושבים לפי פירוש סביר של קובץ הרשת. תמיד אפשר לבדוק את נוסח המבצע ב"פירוט".</li>
+  <li>המחיר בקופה עלול להיות שונה מעט מהמחיר בקובץ.</li></ul>
+ <h4>התקנה במסך הבית</h4><p>ב־Safari: שתף ← הוסף למסך הבית.</p>`);
 
 function tab(b) { $("vb").classList.toggle("hidden", !b); $("vs").classList.toggle("hidden", b); $("tb").classList.toggle("on", b); $("ts").classList.toggle("on", !b); if (b) renderBasket(); }
 $("tb").onclick = () => tab(true); $("ts").onclick = () => tab(false);
