@@ -52,8 +52,20 @@ details summary{color:var(--muted);font-size:13px;margin-top:6px}
 label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 .empty{color:var(--muted);text-align:center;padding:24px 10px}
 .hidden{display:none}
+.sbox{position:relative}
+.sbox input{padding-inline-end:54px}
+.scanb{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:42px;height:38px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:19px}
+#scan{position:fixed;inset:0;z-index:12;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+#scan.hidden{display:none}
+#reader{width:100%;max-width:420px}
+#scan p{color:#fff;margin:0;font-size:15px;text-align:center}
+#scan button{background:#fff;color:#000;border:0;border-radius:22px;padding:10px 26px;font:inherit;font-size:16px}
+.price{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;justify-content:flex-end}
+.ends{color:#C0392B;font-weight:700}
+#toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 70px);left:50%;transform:translateX(-50%);z-index:13;background:var(--green);color:#fff;border-radius:12px;padding:10px 16px;font-size:15px;max-width:90%}
+#toast.hidden{display:none}
 .hb{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px}
-.ver{background:none;border:0;color:var(--gold);font:inherit;font-size:12px;padding:0}
+.ver{background:none;border:0;color:#F2C75C;font:inherit;font-size:13px;font-weight:500;padding:0;-webkit-appearance:none;appearance:none;opacity:1}
 .meta{margin-inline-start:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .meta small{color:var(--silver);font-size:12px}
 .fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:6;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:24px;padding:10px 20px;font:inherit;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -78,7 +90,7 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 </header>
 <main>
  <section id="vb">
-  <input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off">
+  <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button></div>
   <div id="res"></div>
   <div id="bask"></div>
   <label class="sw"><input type="checkbox" id="club"> לכלול מבצעי מועדון וכרטיס</label>
@@ -87,10 +99,13 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
  <section id="vs" class="hidden"><div id="stores"></div></section>
 </main>
 <button class="fab" id="refresh">🔄 רענון</button>
+<div id="scan" class="hidden"><p>כוון את המצלמה לברקוד</p><div id="reader"></div><button id="scanx">ביטול</button></div>
+<div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.1.1";
+const VERSION = "1.2.0";
 const CHANGELOG = [
+ ["1.2.0", "27.10.2026", ["סריקת ברקוד במצלמה מתוך תיבת החיפוש", "סימון מבצע שמסתיים היום", "רווח בין המחיר המחוק למחיר במבצע", "מספר גרסה קריא יותר"]],
  ["1.1.1", "27.10.2026", ["תיקון: שכבה כהה כיסתה את המסך וחסמה לחיצות"]],
  ["1.1.0", "27.10.2026", ["כפתור רענון שטוען את האפליקציה והנתונים מחדש", "מספר גרסה ויומן גרסאות", "מצב יום ולילה", "מדריך שימוש"]],
  ["1.0.0", "27.10.2026", ["גרסה ראשונה: בחירת סניפים, חיפוש מוצרים, סל, והשוואת מחיר הסל בין הסניפים כולל מבצעים ומבצעי מועדון"]],
@@ -105,7 +120,7 @@ const S = { stores: [], sel: new Set(load("sel", [])), basket: load("basket", {}
 $("club").checked = S.club;
 
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
-async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); } return S.cat; }
+async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); if ($("q").value.trim().length < 2) $("res").innerHTML = ""; } return S.cat; }
 async function files() {
  await Promise.all([...S.sel].filter(s => !S.files[s]).map(async s => { S.files[s] = await getJSON(`data/s/${s}.json`); }));
 }
@@ -178,6 +193,7 @@ function promoUnit(price, pr) {
  if (dr) return price * (1 - (dr > 1 ? dr / 100 : dr));
  return null;
 }
+const TODAY = new Date().toLocaleDateString("sv-SE");
 const isClub = club => !/^\s*0/.test(String(club ?? "0"));
 
 function compare(cat) {
@@ -197,16 +213,44 @@ function compare(cat) {
     if (u != null && u > 0 && u < best) { best = u; why = { d: pr[0], club, end: pr[1] }; }
    }
    reg += p[0] * q; tot += best * q;
-   lines.push(`<div class="line"><span>${esc(cat[c]?.[0] || c)} ×${q}${why ? `<br><span class="tag ${why.club ? "club" : ""}">${why.club ? "מועדון: " : "מבצע: "}${esc(why.d)}${why.end ? " · עד " + esc(why.end) : ""}</span>` : ""}</span><b>${ils(best * q)}</b></div>`);
+   lines.push(`<div class="line"><span>${esc(cat[c]?.[0] || c)} ×${q}${why ? `<br><span class="tag ${why.club ? "club" : ""}">${why.club ? "מועדון: " : "מבצע: "}${esc(why.d)}${why.end ? (why.end === TODAY ? ' · <span class="ends">מסתיים היום</span>' : " · עד " + esc(why.end.split("-").reverse().join("."))) : ""}</span>` : ""}</span><b>${ils(best * q)}</b></div>`);
   }
   return { st, reg, tot, miss, lines };
  }).filter(Boolean).sort((a, b) => a.miss - b.miss || a.tot - b.tot);
  const n = Object.keys(S.basket).length;
  $("cmp").innerHTML = "<h2>השוואה</h2>" + rows.map((r, i) => `<div class="box store ${i === 0 && !r.miss ? "best" : ""}">
   <div class="t"><div><div class="name">${esc(r.st.he)}${i === 0 && !r.miss ? '<span class="badge">הכי זול</span>' : ""}</div><div class="sub">${esc(r.st.name)}</div></div>
-  <div>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}<span class="total">${ils(r.tot)}</span></div></div>
+  <div class="price"><span class="total">${ils(r.tot)}</span>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
   ${r.miss ? `<div class="miss">חסרים ${r.miss} מתוך ${n} פריטים, הסכום לא כולל אותם</div>` : ""}
   <details><summary>פירוט</summary>${r.lines.join("")}</details></div>`).join("");
+}
+
+// ---- barcode scanner ----
+let scanner = null;
+function toast(t) { $("toast").textContent = t; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"), 2500); }
+function loadLib() {
+ if (window.Html5Qrcode) return Promise.resolve();
+ return new Promise((ok, bad) => { const sc = document.createElement("script");
+  sc.src = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+}
+async function stopScan() { try { if (scanner) { await scanner.stop(); scanner.clear(); } } catch {} scanner = null; $("scan").classList.add("hidden"); }
+$("scanx").onclick = stopScan;
+$("scanb").onclick = async () => {
+ $("scan").classList.remove("hidden");
+ try {
+  await loadLib();
+  const F = Html5QrcodeSupportedFormats;
+  scanner = new Html5Qrcode("reader", { formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128], verbose: false });
+  await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 260, height: 130 } }, async code => {
+   await stopScan(); onBarcode(code.trim());
+  });
+ } catch (e) { await stopScan(); toast("לא ניתן לפתוח את המצלמה. אשר גישה למצלמה ב-Safari ונסה שוב."); }
+};
+async function onBarcode(code) {
+ const cat = await catalog();
+ const hit = [code, code.replace(/^0+/, ""), "0" + code].find(c => cat[c]);
+ if (hit) { S.basket[hit] = (S.basket[hit] || 0) + 1; store("basket", S.basket); toast("נוסף לסל: " + cat[hit][0]); renderBasket(); }
+ else { $("q").value = code; search(); toast("הברקוד " + code + " לא נמצא בסניפי האזור"); }
 }
 
 // ---- theme ----
