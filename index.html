@@ -59,7 +59,10 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 [data-view]{cursor:pointer}
 .addbig{display:block;width:100%;margin:12px 0 6px;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:12px;padding:11px;font:inherit;font-size:16px}
 .sbox{position:relative}
-.sbox input{padding-inline-end:54px}
+.sbox input{padding-inline-end:100px}
+.sbox input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.clrb{position:absolute;inset-inline-end:54px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:50%;background:var(--line);color:var(--text);font-size:17px}
+.clrb.hidden{display:none}
 .scanb{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:42px;height:38px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:19px}
 #scan{position:fixed;inset:0;z-index:12;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
 #scan.hidden{display:none}
@@ -97,7 +100,7 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 </header>
 <main>
  <section id="vb">
-  <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button></div>
+  <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="clrb hidden" id="clrb" aria-label="ניקוי החיפוש">✕</button><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button></div>
   <div id="res"></div>
   <div id="bask"></div>
   <label class="sw"><input type="checkbox" id="club"> לכלול מבצעי מועדון וכרטיס</label>
@@ -110,8 +113,9 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.4.1";
+const VERSION = "1.4.2";
 const CHANGELOG = [
+ ["1.4.2", "29.10.2026", ["תיקון: סניף שאין בו כמעט מוצרים מהסל לא מופיע יותר בראש ההשוואה", "סניפים שאין בהם אף מוצר מהסל מוסתרים", "כפתור ✕ לניקוי החיפוש וחזרה לסל"]],
  ["1.4.1", "29.10.2026", ["ביצים מקובצות לפי גודל, כמות וסוג, בלי תלות ביצרן", "סניף שחסר בו מוצר מדורג לפי המחיר הכולל עם ההשלמה, ולא נדחק לסוף הרשימה"]],
  ["1.4.0", "28.10.2026", ["השלמה מסניף אחר: לכל סניף שחסרים בו מוצרים מוצג איפה הכי זול להשלים אותם, וכמה יעלה הכול ביחד", "המלצה בראש ההשוואה: הכול בסניף אחד או חלוקה בין שני סניפים, לפי מה שחוסך מספיק", "מוצרים חסרים מוצגים בשמם"]],
  ["1.3.1", "28.10.2026", ["בדיקת מחיר בלי להוסיף לסל: לחיצה על שם מוצר בתוצאות החיפוש מציגה את המחיר שלו בכל סניף"]],
@@ -156,7 +160,9 @@ $("stores").addEventListener("change", e => {
 
 // ---- search ----
 let tmr;
-$("q").addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(search, 250); });
+$("q").addEventListener("input", () => { $("clrb").classList.toggle("hidden", !$("q").value); clearTimeout(tmr); tmr = setTimeout(search, 250); });
+function clearSearch() { $("q").value = ""; $("res").innerHTML = ""; $("clrb").classList.add("hidden"); $("q").blur(); }
+$("clrb").onclick = clearSearch;
 async function search() {
  const q = $("q").value.trim();
  if (q.length < 2) { $("res").innerHTML = ""; return; }
@@ -184,7 +190,7 @@ $("res").addEventListener("click", e => {
  const v = e.target.closest("[data-view]"); if (v) { showProduct(v.dataset.view); return; }
  const c = e.target.dataset.add; if (!c) return;
  S.basket[c] = (S.basket[c] || 0) + 1; store("basket", S.basket);
- $("q").value = ""; $("res").innerHTML = ""; renderBasket();
+ clearSearch(); renderBasket();
 });
 
 // ---- basket + compare ----
@@ -249,7 +255,7 @@ async function showProduct(c) {
 }
 $("sheet").addEventListener("click", e => {
  const c = e.target.dataset.addsheet; if (!c) return;
- S.basket[c] = (S.basket[c] || 0) + 1; store("basket", S.basket); closeModal(); toast("נוסף לסל"); renderBasket();
+ S.basket[c] = (S.basket[c] || 0) + 1; store("basket", S.basket); closeModal(); clearSearch(); toast("נוסף לסל"); renderBasket();
 });
 
 function compare(cat) {
@@ -275,7 +281,11 @@ function compare(cat) {
   const fill = {}; let fillSum = 0, nowhere = [];
   missing.forEach(c => { const b = cheapestElse(c, sid); if (!b) { nowhere.push(c); return; } (fill[b.sid] ||= { v: 0, items: [] }); fill[b.sid].v += b.v; fill[b.sid].items.push(c); fillSum += b.v; });
   return { sid, st, reg, tot, lines, missing, fill, fillSum, nowhere, full: tot + fillSum };
- }).sort((a, b) => (a.nowhere.length > 0) - (b.nowhere.length > 0) || a.full - b.full);
+ }).filter(r => r.lines.length > 0);
+ // tier 0: complete, or missing at most a quarter of the basket (min 1) -> ranked by total incl. completion
+ const tier = r => r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 0 : 1;
+ rows.sort((a, b) => tier(a) - tier(b) || a.full - b.full);
+ const hidden = stores.length - rows.length;
  const firstFull = rows.findIndex(r => !r.missing.length);
 
  // best single complete store vs best split between two stores
@@ -312,7 +322,7 @@ function compare(cat) {
   ${r.missing.length ? `<div class="miss">חסרים ${r.missing.length} מתוך ${n} פריטים: ${r.missing.map(nm).join(", ")}</div>${fillHtml}
    ${r.fillSum ? `<div class="sub"><b>סה"כ כולל השלמה: ${ils(r.full)}</b></div>` : ""}` : ""}
   <details><summary>פירוט</summary>${r.lines.join("")}</details></div>`;
- }).join("");
+ }).join("") + (hidden ? `<div class="empty">${hidden} סניפים לא מוכרים אף מוצר מהסל ולכן לא מוצגים</div>` : "");
 }
 
 // ---- barcode scanner ----
@@ -359,7 +369,7 @@ async function onBarcode(code) {
  const cat = await catalog();
  const hit = [code, code.replace(/^0+/, ""), "0" + code].find(c => cat[c]);
  if (hit) { S.basket[hit] = (S.basket[hit] || 0) + 1; store("basket", S.basket); toast("נוסף לסל: " + cat[hit][0]); renderBasket(); }
- else { $("q").value = code; search(); toast("הברקוד " + code + " לא נמצא בסניפי האזור"); }
+ else { $("q").value = code; $("clrb").classList.remove("hidden"); search(); toast("הברקוד " + code + " לא נמצא בסניפי האזור"); }
 }
 
 // ---- theme ----
