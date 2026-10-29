@@ -11,7 +11,29 @@ STOP = {"במשקל", "משקל", "ארוז", "לק\"ג", "ק\"ג", "קג", "ל�
 def norm_name(n):
  n = re.sub(r"[\"'׳״()\[\].,*/\\\-]", " ", n or "")
  words = [w for w in n.split() if w not in STOP and not re.fullmatch(r"\d+", w)]
+ if words:  # simple Hebrew plural -> singular on the head word: מלפפונים->מלפפון, עגבניות->עגבניה
+  h = words[0]
+  if len(h) > 4 and h.endswith("ים"): words[0] = h[:-2]
+  elif len(h) > 4 and h.endswith("יות"): words[0] = h[:-3] + "יה"
+  elif len(h) > 4 and h.endswith("ות"): words[0] = h[:-2] + "ה"
+  w0 = words[0]
+  if w0[-1] in "כמנפצ": words[0] = w0[:-1] + "ךםןףץ"["כמנפצ".index(w0[-1])]  # final letter form
  return " ".join(words[:4]).strip()
+
+EGG_SKIP = ("אטריות", "נודלס", "שוקולד", "הפתעה", "עוגיות", "פסטה", "ביסקוויט", "חלבון", "מיונז", "סלט", "ביצת", "קינדר")
+
+def egg_group(n):
+ # Eggs come from many producers with different barcodes: group by size, count and type
+ t = (n or "").replace("\u202b", "").replace("\u202c", "")
+ if "ביצים" not in t or any(w in t for w in EGG_SKIP):
+  return None
+ m = re.search(r"(?<!\d)(6|10|12|18|20|24|30)(?!\d)", t)
+ if not m:
+  return None
+ size = "XL" if ("XL" in t or "ענק" in t) else "L" if (re.search(r"(?<![A-Za-z])L(?![A-Za-z])", t) or "גדול" in t) \
+  else "M" if (re.search(r"(?<![A-Za-z])M(?![A-Za-z])", t) or "בינוני" in t) else ""
+ kind = next((k for k in ("אומגה", "אורגני", "חופש") if k in t), "")
+ return " ".join(x for x in ["ביצים", size, m.group(1) + " יח׳", kind] if x)
 
 def dump(path, obj):
  path.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -43,6 +65,10 @@ def main():
  dump(DATA / "stores.json", {"updated": today, "stores": stores})
  cat, groups = {}, {}
  for c, n, m, q, u, w in db.execute("SELECT item_code, name, manufacturer, quantity, unit, is_weighted FROM products"):
+  eg = egg_group(n)
+  if eg:
+   groups.setdefault(eg, {"n": eg, "u": "", "w": 0, "c": []})["c"].append(c)
+   continue
   if ":" in c or len(c) < 8 or w:
    # produce / deli / weighted: chain-internal codes, so group by normalized name across chains
    g = norm_name(n)
