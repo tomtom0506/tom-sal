@@ -1,10 +1,17 @@
 """Export slim JSON files for the web app: out/sal.db -> site/data/"""
-import json, sqlite3
+import json, re, sqlite3
 from datetime import date
 from pathlib import Path
 import israeli_prices as ilp
 
 DATA = Path("site/data"); (DATA / "s").mkdir(parents=True, exist_ok=True)
+
+STOP = {"במשקל", "משקל", "ארוז", "לק\"ג", "ק\"ג", "קג", "לקג", "טרי", "טריים", "טריה", "מובחר", "מובחרים", "סוג", "א", "א'", "יח'", "יחידה", "יח", "כ", "לק", "ק", "ג", "גר", "גרם", "קילו", "מל", "ליטר", "יחי"}
+
+def norm_name(n):
+ n = re.sub(r"[\"'׳״()\[\].,*/\\\-]", " ", n or "")
+ words = [w for w in n.split() if w not in STOP and not re.fullmatch(r"\d+", w)]
+ return " ".join(words[:4]).strip()
 
 def dump(path, obj):
  path.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -34,9 +41,19 @@ def main():
   l = {c: [p for p in ps if p in promos] for c, ps in links.get(sid, {}).items()}
   dump(DATA / "s" / f"{key}.json", {"p": prices, "pr": promos, "l": {c: ps for c, ps in l.items() if ps}})
  dump(DATA / "stores.json", {"updated": today, "stores": stores})
- cat = {c: [n, m, q, u] for c, n, m, q, u in db.execute("SELECT item_code, name, manufacturer, quantity, unit FROM products")}
+ cat, groups = {}, {}
+ for c, n, m, q, u, w in db.execute("SELECT item_code, name, manufacturer, quantity, unit, is_weighted FROM products"):
+  if ":" in c or len(c) < 8 or w:
+   # produce / deli / weighted: chain-internal codes, so group by normalized name across chains
+   g = norm_name(n)
+   if g:
+    groups.setdefault(g, {"n": g, "u": u, "w": int(bool(w)), "c": []})["c"].append(c)
+    continue
+  cat[c] = [n, m, q, u]
+ for g, v in groups.items():
+  cat["g:" + g] = [v["n"], "", None, v["u"], v["w"], v["c"]]
  dump(DATA / "catalog.json", cat)
- print(len(stores), "stores,", len(cat), "products")
+ print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups")
 
 if __name__ == "__main__":
  main()
