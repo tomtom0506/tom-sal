@@ -1,5 +1,5 @@
 """Nightly fetch: prices + promos for stores in the user's area -> out/sal.db.gz"""
-import gzip, json, os, re, shutil, sqlite3
+import gzip, json, os, re, shutil, sqlite3, time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,7 +22,17 @@ def in_area(st):
   return city in AREA_CODES
  return bool(AREA_RE.search(norm(f"{city} {st.address} {st.name}")))
 
-def get_stores(slug):
+def get_stores(slug, tries=3):
+ # portals fail transiently (e.g. Shufersal on 30.10): retry before giving up
+ for t in range(tries):
+  try:
+   return _get_stores(slug)
+  except Exception:
+   if t == tries - 1:
+    raise
+   time.sleep(20 * (t + 1))
+
+def _get_stores(slug):
  try:
   return ilp.get_stores(slug)
  except ilp.FileNotFound:
@@ -61,7 +71,7 @@ def main():
  db = sqlite3.connect(db_path)
  # Normalized: product details stored once, promo details once per promo.
  db.executescript("""
- CREATE TABLE stores(sid INTEGER PRIMARY KEY, chain, store_id, name, address, city, items INT, promos INT);
+ CREATE TABLE stores(sid INTEGER PRIMARY KEY, chain, store_id, name, address, city, items INT, promos INT, stale INT DEFAULT 0);
  CREATE TABLE products(item_code TEXT PRIMARY KEY, name, manufacturer, quantity REAL,
   unit, is_weighted INT) WITHOUT ROWID;
  CREATE TABLE prices(item_code TEXT, sid INT, price REAL, unit_price REAL,
@@ -108,6 +118,30 @@ def main():
       "city": st.city, "items": len(items), "promos": len(promos)})
    print("OK", chain, st.name, len(items), len(promos))
  db.commit()
+
+ # chains that failed completely today: keep yesterday's data (marked stale) instead of dropping them
+ failed = {e["chain"] for e in errors if e["stage"] == "stores"}
+ prev = Path("prev/sal.db")
+ if failed and prev.exists():
+  db.execute("ATTACH DATABASE ? AS prev", (str(prev),))
+  for chain in sorted(failed):
+   try:
+    old = db.execute("SELECT sid, store_id, name, address, city, items, promos FROM prev.stores WHERE chain=?", (chain,)).fetchall()
+   except sqlite3.Error:
+    old = []
+   for osid, store_id, name, address, city, items, promos in old:
+    sid = db.execute("INSERT INTO stores(chain,store_id,name,address,city,items,promos,stale) VALUES(?,?,?,?,?,?,?,1)",
+      (chain, store_id, name, address, city, items, promos)).lastrowid
+    db.execute("INSERT OR IGNORE INTO products SELECT pr.* FROM prev.products pr JOIN prev.prices p ON p.item_code=pr.item_code WHERE p.sid=?", (osid,))
+    db.execute("INSERT OR REPLACE INTO prices SELECT item_code, ?, price, unit_price FROM prev.prices WHERE sid=?", (sid, osid))
+    for opid, *rest in db.execute("SELECT pid, promotion_id, description, start, end, club, min_qty, discounted_price, discount_rate FROM prev.promos WHERE sid=?", (osid,)).fetchall():
+     pid = db.execute("INSERT INTO promos(sid,promotion_id,description,start,end,club,min_qty,discounted_price,discount_rate) VALUES(?,?,?,?,?,?,?,?,?)", (sid, *rest)).lastrowid
+     db.execute("INSERT OR IGNORE INTO promo_items SELECT item_code, ? FROM prev.promo_items WHERE pid=?", (pid, opid))
+    rows.append({"chain": chain, "he": chains[chain].name_he + " (אתמול)", "store": name, "city": city, "items": items, "promos": promos})
+   if old:
+    print("fallback to previous data:", chain, len(old), "stores")
+  db.commit()
+  db.execute("DETACH DATABASE prev")
  db.execute("VACUUM"); db.close()
 
  gz = OUT / "sal.db.gz"

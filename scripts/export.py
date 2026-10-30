@@ -35,6 +35,11 @@ def egg_group(n):
  kind = next((k for k in ("אומגה", "אורגני", "חופש") if k in t), "")
  return " ".join(x for x in ["ביצים", size, m.group(1) + " יח׳", kind] if x)
 
+def is_coupon(desc, mq, dr):
+ d = desc or ""
+ return ("קופון" in d or re.search(r"מעל\s*₪?\s*\d", d) is not None
+   or (mq or 0) >= 50 or (dr or 0) >= 90)
+
 def dump(path, obj):
  path.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
@@ -47,11 +52,13 @@ def main():
  for code, pid, sid in db.execute("SELECT pi.item_code, pi.pid, p.sid FROM promo_items pi JOIN promos p ON p.pid = pi.pid"):
   links.setdefault(sid, {}).setdefault(code, []).append(pid)
  stores = []
- for sid, chain, store_id, name, address, city, items in db.execute(
-   "SELECT sid, chain, store_id, name, address, city, items FROM stores ORDER BY chain, name").fetchall():
+ cols = [r[1] for r in db.execute("PRAGMA table_info(stores)")]
+ stale_col = "stale" if "stale" in cols else "0"
+ for sid, chain, store_id, name, address, city, items, stale in db.execute(
+   f"SELECT sid, chain, store_id, name, address, city, items, {stale_col} FROM stores ORDER BY chain, name").fetchall():
   key = f"{chain}-{store_id}"  # stable across nightly runs (sid is not)
   stores.append({"sid": key, "chain": chain, "he": he.get(chain, chain), "name": name,
-   "address": address, "city": city, "items": items})
+   "address": address, "city": city, "items": items, "stale": int(stale or 0)})
   prices = {c: [p, u] for c, p, u in db.execute("SELECT item_code, price, unit_price FROM prices WHERE sid=?", (sid,))}
   promos = {}
   for pid, desc, end, club, mq, dp, dr in db.execute(
@@ -59,6 +66,8 @@ def main():
    end = end or ""
    if end[:4].isdigit() and end[:10] < today:
     continue  # expired
+   if is_coupon(desc, mq, dr):
+    continue  # basket coupons / spend thresholds are not item prices
    promos[pid] = [desc, end[:10], club, mq, dp, dr]
   l = {c: [p for p in ps if p in promos] for c, ps in links.get(sid, {}).items()}
   dump(DATA / "s" / f"{key}.json", {"p": prices, "pr": promos, "l": {c: ps for c, ps in l.items() if ps}})
