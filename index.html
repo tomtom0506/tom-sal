@@ -96,25 +96,27 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
   <div class="meta"><button class="ver" id="ver"></button><small id="upd"></small></div>
   <button class="hb" id="theme" aria-label="מצב יום או לילה">🌙</button>
   <button class="hb" id="help" aria-label="מדריך">❔</button></div>
- <nav><button id="tb" class="on">סל</button><button id="ts">סניפים <span id="nsel"></span></button></nav>
+ <nav><button id="tb" class="on">סל</button><button id="ts">סניפים <span id="nsel"></span></button><button id="tc">מועדונים <span id="ncl"></span></button></nav>
 </header>
 <main>
  <section id="vb">
   <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="clrb hidden" id="clrb" aria-label="ניקוי החיפוש">✕</button><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button></div>
   <div id="res"></div>
   <div id="bask"></div>
-  <label class="sw"><input type="checkbox" id="club"> לכלול מבצעי מועדון וכרטיס</label>
+  <div class="sub" id="clubnote" style="margin-top:12px"></div>
   <div id="cmp"></div>
  </section>
  <section id="vs" class="hidden"><div id="stores"></div></section>
+ <section id="vc" class="hidden"><div id="clubs"></div></section>
 </main>
 <button class="fab" id="refresh">🔄 רענון</button>
 <div id="scan" class="hidden"><p>כוון לברקוד ממרחק 15–20 ס"מ, באור טוב</p><div id="reader"></div><label class="photo">📸 לא מצליח? צלם תמונה של הברקוד<input type="file" id="photo" accept="image/*" capture="environment" hidden></label><button id="scanx">ביטול</button></div><div id="scanfile" hidden></div>
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.4.3";
+const VERSION = "1.5.0";
 const CHANGELOG = [
+ ["1.5.0", "30.10.2026", ["לשונית חדשה \"מועדונים\": מסמנים באילו מועדוני רשתות, כרטיסי אשראי ומועדוני הטבות אתה חבר", "מבצעי מועדון נספרים רק ברשתות שסימנת שאתה חבר במועדון שלהן", "הכול נשמר רק בטלפון, בלי מספרי כרטיס או פרטים אישיים"]],
  ["1.4.3", "30.10.2026", ["חישוב מדויק יותר של מבצעי \"X ב-Y\" גם כשמחיר המבצע נמוך ממחיר יחידה", "קופונים והטבות על סכום קנייה לא נספרים יותר כמחיר של מוצר", "רשת שלא עדכנה היום מוצגת עם נתוני אתמול ומסומנת"]],
  ["1.4.2", "29.10.2026", ["תיקון: סניף שאין בו כמעט מוצרים מהסל לא מופיע יותר בראש ההשוואה", "סניפים שאין בהם אף מוצר מהסל מוסתרים", "כפתור ✕ לניקוי החיפוש וחזרה לסל"]],
  ["1.4.1", "29.10.2026", ["ביצים מקובצות לפי גודל, כמות וסוג, בלי תלות ביצרן", "סניף שחסר בו מוצר מדורג לפי המחיר הכולל עם ההשלמה, ולא נדחק לסוף הרשימה"]],
@@ -133,8 +135,7 @@ const ils = n => "₪" + n.toFixed(2);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-const S = { stores: [], sel: new Set(load("sel", [])), basket: load("basket", {}), club: load("club", false), cat: null, files: {} };
-$("club").checked = S.club;
+const S = { stores: [], sel: new Set(load("sel", [])), basket: load("basket", {}), chainClubs: new Set(load("chainClubs", [])), memb: load("memb", []), cat: null, files: {} };
 
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
 async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); if ($("q").value.trim().length < 2) $("res").innerHTML = ""; } return S.cat; }
@@ -213,7 +214,7 @@ $("bask").addEventListener("click", e => {
  S.basket[c] += +e.target.dataset.v; if (S.basket[c] <= 0) delete S.basket[c];
  store("basket", S.basket); renderBasket();
 });
-$("club").addEventListener("change", e => { S.club = e.target.checked; store("club", S.club); renderBasket(); });
+
 
 function promoUnit(price, pr) {
  let [d, , , mq, dp, dr] = pr; mq = mq || 1;
@@ -234,14 +235,14 @@ const cands = c => c.startsWith("g:") ? (S.cat?.[c]?.[5] || []) : [c];
 const kg = c => c.startsWith("g:") && S.cat?.[c]?.[4];
 const isClub = club => !/^\s*0/.test(String(club ?? "0"));
 
-function bestIn(f, c, q) {
+function bestIn(f, c, q, chain) {
  let best = null, why = null, regp = null;
  for (const cc of cands(c)) {
   const p = f.p[cc]; if (!p || !(p[0] > 0)) continue;
   let b = p[0], w = null;
   for (const pid of f.l[cc] || []) {
    const pr = f.pr[pid]; if (!pr) continue;
-   const club = isClub(pr[2]); if (club && !S.club) continue;
+   const club = isClub(pr[2]); if (club && !S.chainClubs.has(chain)) continue;
    if (q < (pr[3] || 1)) continue;
    const u = promoUnit(p[0], pr);
    if (u != null && u > 0 && u < b) { b = u; w = { d: pr[0], club, end: pr[1] }; }
@@ -256,7 +257,7 @@ const promoTag = why => why ? `<br><span class="tag ${why.club ? "club" : ""}">$
 async function showProduct(c) {
  const cat = await catalog(); await files();
  const [n, m, qn, u] = cat[c] || [c];
- const rows = [...S.sel].map(sid => ({ st: S.stores.find(s => s.sid === sid), r: S.files[sid] && bestIn(S.files[sid], c, 1) })).filter(x => x.st);
+ const rows = [...S.sel].map(sid => ({ st: S.stores.find(s => s.sid === sid), r: S.files[sid] && bestIn(S.files[sid], c, 1, S.stores.find(s => s.sid === sid)?.chain) })).filter(x => x.st);
  const have = rows.filter(x => x.r).sort((a, b) => a.r.best - b.r.best), none = rows.filter(x => !x.r);
  openModal(`<h3>${esc(n)}</h3><div class="sub">${c.startsWith("g:") ? "כל הרשתות" + (kg(c) ? " · מחיר לק\"ג" : "") : esc(m || "") + " " + (qn ? esc(qn + " " + (u || "")) : "")}</div>
   <button class="addbig" data-addsheet="${esc(c)}">➕ הוסף לסל</button>
@@ -270,14 +271,19 @@ $("sheet").addEventListener("click", e => {
  S.basket[c] = (S.basket[c] || 0) + 1; store("basket", S.basket); closeModal(); clearSearch(); toast("נוסף לסל"); renderBasket();
 });
 
+function clubNote() {
+ const n = S.chainClubs.size;
+ $("clubnote").innerHTML = n ? `מבצעי מועדון נספרים ב-${n} רשתות שסימנת. לשינוי: לשונית "מועדונים".` : `מבצעי מועדון לא נספרים. אם אתה חבר במועדון של רשת, סמן אותו בלשונית "מועדונים".`;
+}
 function compare(cat) {
+ clubNote();
  if (!S.sel.size) { $("cmp").innerHTML = '<div class="empty">בחר סניפים בלשונית "סניפים" כדי להשוות.</div>'; return; }
  const items = Object.entries(S.basket), n = items.length;
  const nm = c => esc(cat[c]?.[0] || c);
  const stores = [...S.sel].map(sid => ({ sid, st: S.stores.find(s => s.sid === sid), f: S.files[sid] })).filter(x => x.st && x.f);
  // cost matrix: store -> item -> {v (line total), best, why, regp} | null
  const M = {};
- stores.forEach(x => { M[x.sid] = {}; items.forEach(([c, q]) => { const r = bestIn(x.f, c, q); M[x.sid][c] = r ? { ...r, v: r.best * q } : null; }); });
+ stores.forEach(x => { M[x.sid] = {}; items.forEach(([c, q]) => { const r = bestIn(x.f, c, q, x.st.chain); M[x.sid][c] = r ? { ...r, v: r.best * q } : null; }); });
  const label = sid => { const st = stores.find(x => x.sid === sid).st; return esc(st.he + " " + st.name); };
  // cheapest other store for an item
  const cheapestElse = (c, not) => { let b = null; stores.forEach(x => { const r = M[x.sid][c]; if (x.sid !== not && r && (!b || r.v < b.v)) b = { sid: x.sid, v: r.v }; }); return b; };
@@ -424,13 +430,44 @@ $("help").onclick = () => openModal(`<h3>מדריך</h3>
   <li>המחיר בקופה עלול להיות שונה מעט מהמחיר בקובץ.</li></ul>
  <h4>התקנה במסך הבית</h4><p>ב־Safari: שתף ← הוסף למסך הבית.</p>`);
 
-function tab(b) { $("vb").classList.toggle("hidden", !b); $("vs").classList.toggle("hidden", b); $("tb").classList.toggle("on", b); $("ts").classList.toggle("on", !b); if (b) renderBasket(); }
-$("tb").onclick = () => tab(true); $("ts").onclick = () => tab(false);
+function tab(b) { const v = b === true ? "b" : b === false ? "s" : b;
+ [["vb", "tb", "b"], ["vs", "ts", "s"], ["vc", "tc", "c"]].forEach(([sec, btn, k]) => { $(sec).classList.toggle("hidden", v !== k); $(btn).classList.toggle("on", v === k); });
+ if (v === "b") renderBasket(); if (v === "c") renderClubs(); }
+$("tb").onclick = () => tab("b"); $("ts").onclick = () => tab("s"); $("tc").onclick = () => tab("c");
+
+// ---- my clubs & cards (names only, stored on this phone) ----
+const PLATFORMS = {
+ "כרטיסי אשראי": ["ישראכרט", "אמריקן אקספרס", "מקס", "כאל", "דיינרס"],
+ "מועדוני הטבות": ["חבר", "בהצדעה", "הייטקזון", "ועד עובדים במקום העבודה"],
+};
+function clubCount() { return S.chainClubs.size + S.memb.length; }
+function renderClubs() {
+ const chains = [...new Map(S.stores.map(s => [s.chain, s.he])).entries()].sort((a, b) => a[1].localeCompare(b[1], "he"));
+ const custom = S.memb.filter(m => !Object.values(PLATFORMS).flat().includes(m));
+ $("clubs").innerHTML = `<p class="sub">סמן רק שמות. לא נשמרים מספרי כרטיס או פרטים אישיים, והכול נשמר רק בטלפון הזה.</p>
+  <h2>מועדוני רשתות · משפיע על חישוב הסל</h2><div class="box">${chains.map(([ch, he]) =>
+   `<label class="row"><input type="checkbox" data-chain="${ch}" ${S.chainClubs.has(ch) ? "checked" : ""}><div class="grow"><div class="name">מועדון ${esc(he)}</div></div></label>`).join("")}</div>
+  ${Object.entries(PLATFORMS).map(([title, list]) => `<h2>${title} · ישמש את לשונית ההטבות שתגיע בהמשך</h2><div class="box">${list.map(m =>
+   `<label class="row"><input type="checkbox" data-memb="${esc(m)}" ${S.memb.includes(m) ? "checked" : ""}><div class="grow"><div class="name">${esc(m)}</div></div></label>`).join("")}</div>`).join("")}
+  <h2>אחר</h2><div class="box">${custom.map(m => `<div class="row"><div class="grow"><div class="name">${esc(m)}</div></div><button class="add" data-rm="${esc(m)}">✕</button></div>`).join("")}
+   <div class="row"><input type="search" id="newclub" placeholder="שם מועדון או כרטיס נוסף" style="flex:1"><button class="add" id="addclub">+</button></div></div>`;
+ $("ncl").textContent = clubCount() ? `(${clubCount()})` : "";
+}
+$("clubs").addEventListener("change", e => {
+ const ch = e.target.dataset.chain, m = e.target.dataset.memb;
+ if (ch) { e.target.checked ? S.chainClubs.add(ch) : S.chainClubs.delete(ch); store("chainClubs", [...S.chainClubs]); }
+ if (m) { S.memb = e.target.checked ? [...new Set([...S.memb, m])] : S.memb.filter(x => x !== m); store("memb", S.memb); }
+ $("ncl").textContent = clubCount() ? `(${clubCount()})` : "";
+});
+$("clubs").addEventListener("click", e => {
+ if (e.target.id === "addclub") { const v = $("newclub").value.trim(); if (v && !S.memb.includes(v)) { S.memb.push(v); store("memb", S.memb); } renderClubs(); }
+ const rm = e.target.dataset.rm; if (rm) { S.memb = S.memb.filter(x => x !== rm); store("memb", S.memb); renderClubs(); }
+});
 
 getJSON("data/stores.json").then(d => {
  S.stores = d.stores; $("upd").textContent = "עודכן " + d.updated.split("-").reverse().join(".");
  const ok = new Set(S.stores.map(s => s.sid)); S.sel.forEach(s => ok.has(s) || S.sel.delete(s));
- renderStores(); if (!S.sel.size) tab(false); else renderBasket();
+ renderStores(); $("ncl").textContent = clubCount() ? `(${clubCount()})` : ""; if (!S.sel.size) tab(false); else renderBasket();
 }).catch(() => { $("bask").innerHTML = '<div class="empty">הנתונים עדיין לא זמינים. נסה שוב אחרי הריצה הלילית.</div>'; });
 </script>
 </body>
