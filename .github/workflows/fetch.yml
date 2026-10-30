@@ -23,6 +23,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install israeli-prices==0.2.0
+      - name: Get previous data (fallback for chains that fail today)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p prev
+          gh release download data -p sal.db.gz -D prev && gunzip -f prev/sal.db.gz || echo "no previous data"
       - run: python scripts/fetch.py
       - name: Publish to data release
         env:
