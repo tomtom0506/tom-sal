@@ -113,8 +113,9 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.4.2";
+const VERSION = "1.4.3";
 const CHANGELOG = [
+ ["1.4.3", "30.10.2026", ["חישוב מדויק יותר של מבצעי \"X ב-Y\" גם כשמחיר המבצע נמוך ממחיר יחידה", "קופונים והטבות על סכום קנייה לא נספרים יותר כמחיר של מוצר", "רשת שלא עדכנה היום מוצגת עם נתוני אתמול ומסומנת"]],
  ["1.4.2", "29.10.2026", ["תיקון: סניף שאין בו כמעט מוצרים מהסל לא מופיע יותר בראש ההשוואה", "סניפים שאין בהם אף מוצר מהסל מוסתרים", "כפתור ✕ לניקוי החיפוש וחזרה לסל"]],
  ["1.4.1", "29.10.2026", ["ביצים מקובצות לפי גודל, כמות וסוג, בלי תלות ביצרן", "סניף שחסר בו מוצר מדורג לפי המחיר הכולל עם ההשלמה, ולא נדחק לסוף הרשימה"]],
  ["1.4.0", "28.10.2026", ["השלמה מסניף אחר: לכל סניף שחסרים בו מוצרים מוצג איפה הכי זול להשלים אותם, וכמה יעלה הכול ביחד", "המלצה בראש ההשוואה: הכול בסניף אחד או חלוקה בין שני סניפים, לפי מה שחוסך מספיק", "מוצרים חסרים מוצגים בשמם"]],
@@ -148,7 +149,7 @@ function renderStores() {
  $("stores").innerHTML = Object.keys(by).sort((a, b) => a.localeCompare(b, "he")).map(ch =>
   `<h2>${esc(ch)}</h2><div class="box">` + by[ch].map(s =>
    `<label class="row"><input type="checkbox" data-sid="${s.sid}" ${S.sel.has(s.sid) ? "checked" : ""}>
-    <div class="grow"><div class="name">${esc(s.name)}</div><div class="sub">${esc(s.address || "")}</div></div></label>`).join("") + "</div>"
+    <div class="grow"><div class="name">${esc(s.name)}${s.stale ? ' <span class="peek">· נתוני אתמול</span>' : ""}</div><div class="sub">${esc(s.address || "")}</div></div></label>`).join("") + "</div>"
  ).join("");
  $("nsel").textContent = S.sel.size ? `(${S.sel.size})` : "";
 }
@@ -167,18 +168,21 @@ async function search() {
  const q = $("q").value.trim();
  if (q.length < 2) { $("res").innerHTML = ""; return; }
  const cat = await catalog(); await files();
- const words = q.split(/\s+/).filter(Boolean), digits = /^\d{4,}$/.test(q), full = [], part = [];
+ const words = q.split(/\s+/).filter(Boolean), digits = /^\d{4,}$/.test(q), full = [], part = [], pin = [];
  for (const code in cat) {
   const [n, m] = cat[code], t = n + " " + (m || "");
   if (digits) { if (code.includes(q)) full.push(code); continue; }
   let k = 0; for (const w of words) if (t.includes(w)) k++;
-  if (k === words.length) full.push(code); else if (k > 0) part.push([code, k]);
+  // a generic group ("מלפפון") whose whole name appears in the query ("מלפפון ירוק") is pinned to the top
+  if (code.startsWith("g:") && n.split(" ").every(w => words.includes(w))) pin.push(code);
+  else if (k === words.length) full.push(code); else if (k > 0) part.push([code, k]);
  }
  part.sort((a, b) => b[1] - a[1]);
  const out = full.length >= 5 ? full : full.concat(part.slice(0, 300).map(x => x[0]));
  const have = c => [...S.sel].filter(s => cands(c).some(x => S.files[s]?.p[x])).length;
  const sc = {}; out.forEach(c => sc[c] = have(c));
  out.sort((a, b) => sc[b] - sc[a] || (b.startsWith("g:") - a.startsWith("g:")) || cat[a][0].length - cat[b][0].length);
+ out.unshift(...pin.sort((a, b) => cat[b][0].length - cat[a][0].length).map(c => (sc[c] = have(c), c)));
  $("res").innerHTML = out.length ? '<div class="box">' + out.slice(0, 30).map(c => {
   const [n, m, qn, u] = cat[c];
   return `<div class="row"><div class="grow" data-view="${esc(c)}"><div class="name">${esc(n)} <span class="peek">› מחירים</span></div>
@@ -212,8 +216,16 @@ $("bask").addEventListener("click", e => {
 $("club").addEventListener("change", e => { S.club = e.target.checked; store("club", S.club); renderBasket(); });
 
 function promoUnit(price, pr) {
- let [, , , mq, dp, dr] = pr; mq = mq || 1;
- if (dp != null && dp > 0) return mq > 1 && dp > price ? dp / mq : dp;  // "2 ב-20" = total for min qty
+ let [d, , , mq, dp, dr] = pr; mq = mq || 1;
+ if (dp != null && dp > 0) {
+  if (mq <= 1) return dp;
+  const per = dp / mq;                       // "2 ב-20": the price is for the whole bundle
+  if (dp > price) return per;
+  if (dr) { const r = dr > 1 ? dr / 100 : dr; return Math.abs((1 - per / price) - r) < Math.abs((1 - dp / price) - r) ? per : dp; }
+  const m = String(d || "").match(/(\d+)\s*ב[-־ ]?\s*₪?\s*(\d+(?:\.\d+)?)/);
+  if (m && +m[1] === mq && Math.abs(+m[2] - dp) < 0.01) return per;
+  return dp;
+ }
  if (dr) return price * (1 - (dr > 1 ? dr / 100 : dr));
  return null;
 }
@@ -317,7 +329,7 @@ function compare(cat) {
   const fillHtml = Object.entries(r.fill).map(([sid, x]) => `<div class="fill">➕ השלמה ב${label(sid)}: ${x.items.map(nm).join(", ")} · ${ils(x.v)}</div>`).join("")
    + (r.nowhere.length ? `<div class="fill">לא נמכר באף סניף שבחרת: ${r.nowhere.map(nm).join(", ")}</div>` : "");
   return `<div class="box store ${top ? "best" : ""}">
-  <div class="t"><div><div class="name">${esc(r.st.he)}${top ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}</div></div>
+  <div class="t"><div><div class="name">${esc(r.st.he)}${top ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}${r.st.stale ? " · נתוני אתמול" : ""}</div></div>
   <div class="price"><span class="total">${ils(r.tot)}</span>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
   ${r.missing.length ? `<div class="miss">חסרים ${r.missing.length} מתוך ${n} פריטים: ${r.missing.map(nm).join(", ")}</div>${fillHtml}
    ${r.fillSum ? `<div class="sub"><b>סה"כ כולל השלמה: ${ils(r.full)}</b></div>` : ""}` : ""}
