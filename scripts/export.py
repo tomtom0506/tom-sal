@@ -47,7 +47,31 @@ def main():
  he = {c.slug: c.name_he for c in ilp.list_chains()}
  db = sqlite3.connect("out/sal.db")
  today = date.today().isoformat()
- # promo -> items, once for all stores
+
+ # 1) catalog + cross-chain groups (produce, deli, eggs)
+ cat, groups, code2group = {}, {}, {}
+ for c, n, m, q, u, w in db.execute("SELECT item_code, name, manufacturer, quantity, unit, is_weighted FROM products"):
+  g = egg_group(n)
+  if not g and (":" in c or len(c) < 8 or w):
+   g = norm_name(n)  # produce / deli / weighted: chain-internal codes, group by normalized name
+  if g:
+   groups.setdefault(g, {"n": g, "u": "" if g.startswith("ביצים") else u, "w": 0 if g.startswith("ביצים") else int(bool(w)), "c": []})["c"].append(c)
+   code2group[c] = g
+   continue
+  cat[c] = [n, m, q, u]
+ for g, v in groups.items():
+  cat["g:" + g] = [v["n"], "", None, v["u"], v["w"], v["c"]]
+
+ # 2) price sanity inside groups: a price far from the group median is almost always a unit error
+ #    (per unit vs per kg, per 100g) - drop it rather than show a wrong cheapest store
+ gp = {}
+ for c, p in db.execute("SELECT item_code, price FROM prices"):
+  if c in code2group and p:
+   gp.setdefault(code2group[c], []).append(p)
+ med = {g: sorted(v)[len(v) // 2] for g, v in gp.items() if len(v) >= 3}
+ dropped = 0
+
+ # 3) per-store files
  links = {}
  for code, pid, sid in db.execute("SELECT pi.item_code, pi.pid, p.sid FROM promo_items pi JOIN promos p ON p.pid = pi.pid"):
   links.setdefault(sid, {}).setdefault(code, []).append(pid)
@@ -59,7 +83,13 @@ def main():
   key = f"{chain}-{store_id}"  # stable across nightly runs (sid is not)
   stores.append({"sid": key, "chain": chain, "he": he.get(chain, chain), "name": name,
    "address": address, "city": city, "items": items, "stale": int(stale or 0)})
-  prices = {c: [p, u] for c, p, u in db.execute("SELECT item_code, price, unit_price FROM prices WHERE sid=?", (sid,))}
+  prices = {}
+  for c, p, u in db.execute("SELECT item_code, price, unit_price FROM prices WHERE sid=?", (sid,)):
+   g = code2group.get(c)
+   if g in med and p and not (0.4 * med[g] <= p <= 3 * med[g]):
+    dropped += 1
+    continue
+   prices[c] = [p, u]
   promos = {}
   for pid, desc, end, club, mq, dp, dr in db.execute(
     "SELECT pid, description, end, club, min_qty, discounted_price, discount_rate FROM promos WHERE sid=?", (sid,)):
@@ -69,26 +99,11 @@ def main():
    if is_coupon(desc, mq, dr):
     continue  # basket coupons / spend thresholds are not item prices
    promos[pid] = [desc, end[:10], club, mq, dp, dr]
-  l = {c: [p for p in ps if p in promos] for c, ps in links.get(sid, {}).items()}
+  l = {c: [p for p in ps if p in promos] for c, ps in links.get(sid, {}).items() if c in prices}
   dump(DATA / "s" / f"{key}.json", {"p": prices, "pr": promos, "l": {c: ps for c, ps in l.items() if ps}})
  dump(DATA / "stores.json", {"updated": today, "stores": stores})
- cat, groups = {}, {}
- for c, n, m, q, u, w in db.execute("SELECT item_code, name, manufacturer, quantity, unit, is_weighted FROM products"):
-  eg = egg_group(n)
-  if eg:
-   groups.setdefault(eg, {"n": eg, "u": "", "w": 0, "c": []})["c"].append(c)
-   continue
-  if ":" in c or len(c) < 8 or w:
-   # produce / deli / weighted: chain-internal codes, so group by normalized name across chains
-   g = norm_name(n)
-   if g:
-    groups.setdefault(g, {"n": g, "u": u, "w": int(bool(w)), "c": []})["c"].append(c)
-    continue
-  cat[c] = [n, m, q, u]
- for g, v in groups.items():
-  cat["g:" + g] = [v["n"], "", None, v["u"], v["w"], v["c"]]
  dump(DATA / "catalog.json", cat)
- print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups")
+ print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups,", dropped, "outlier prices dropped")
 
 if __name__ == "__main__":
  main()
