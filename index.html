@@ -114,8 +114,9 @@ label.sw{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.5.0";
+const VERSION = "1.5.1";
 const CHANGELOG = [
+ ["1.5.1", "31.10.2026", ["סדר ההשוואה: קודם סניפים שיש בהם את כל הסל מהזול ליקר, אחריהם סניפים שחסר בהם מעט, ובסוף השאר", "סינון מחירים חריגים בירקות ומוצרים במשקל, למשל מלפפון ב-₪1.80 לק\"ג, שהם כמעט תמיד טעות יחידות בקובץ הרשת"]],
  ["1.5.0", "30.10.2026", ["לשונית חדשה \"מועדונים\": מסמנים באילו מועדוני רשתות, כרטיסי אשראי ומועדוני הטבות אתה חבר", "מבצעי מועדון נספרים רק ברשתות שסימנת שאתה חבר במועדון שלהן", "הכול נשמר רק בטלפון, בלי מספרי כרטיס או פרטים אישיים"]],
  ["1.4.3", "30.10.2026", ["חישוב מדויק יותר של מבצעי \"X ב-Y\" גם כשמחיר המבצע נמוך ממחיר יחידה", "קופונים והטבות על סכום קנייה לא נספרים יותר כמחיר של מוצר", "רשת שלא עדכנה היום מוצגת עם נתוני אתמול ומסומנת"]],
  ["1.4.2", "29.10.2026", ["תיקון: סניף שאין בו כמעט מוצרים מהסל לא מופיע יותר בראש ההשוואה", "סניפים שאין בהם אף מוצר מהסל מוסתרים", "כפתור ✕ לניקוי החיפוש וחזרה לסל"]],
@@ -301,7 +302,7 @@ function compare(cat) {
   return { sid, st, reg, tot, lines, missing, fill, fillSum, nowhere, full: tot + fillSum };
  }).filter(r => r.lines.length > 0);
  // tier 0: complete, or missing at most a quarter of the basket (min 1) -> ranked by total incl. completion
- const tier = r => r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 0 : 1;
+ const tier = r => !r.missing.length ? 0 : r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 1 : 2;
  rows.sort((a, b) => tier(a) - tier(b) || a.full - b.full);
  const hidden = stores.length - rows.length;
  const firstFull = rows.findIndex(r => !r.missing.length);
