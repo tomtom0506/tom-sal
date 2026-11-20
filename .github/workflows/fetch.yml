@@ -7,7 +7,9 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: "0 1 * * *"
+    # GitHub delays runs set on the full hour (on 19-20.11 they started ~08:00 UTC instead of 01:00).
+    # 00:37 UTC = 02:37 Israel in winter, 03:37 in summer.
+    - cron: "37 0 * * *"
 permissions:
   contents: write
   pages: write
