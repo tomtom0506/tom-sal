@@ -1,0 +1,83 @@
+// Run: node --test tests/
+// Extracts the pure price logic between the ==calc-start== / ==calc-end== markers in index.html.
+const test = require("node:test");
+const assert = require("node:assert");
+const fs = require("fs");
+const path = require("path");
+const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+const src = html.split("// ==calc-start==")[1].split("\n").slice(1).join("\n").split("// ==calc-end==")[0];
+const C = new Function(src + "; return C;")();
+const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `${a} != ${b}`);
+const T = "2026-11-20";
+
+test("X for Y with a remainder: extra units at the regular price", () => {
+ // bug: 3 units of "2 ב-20" (regular 15) showed 30 instead of 35
+ const pr = ["2 ב-20", "", 0, 2, 20, null, ""];
+ near(C.promoLine(15, pr, 2), 20);
+ near(C.promoLine(15, pr, 3), 35);
+ near(C.promoLine(15, pr, 4), 40);
+ assert.strictEqual(C.promoLine(15, pr, 1), null);
+ // "3 ב-10", regular 4, 4 units -> 10 + 4 = 14 (was 13.33)
+ near(C.promoLine(4, ["3 ב-10", "", 0, 3, 10, null, ""], 4), 14);
+});
+
+test("real file rows: bundle vs per-unit price", () => {
+ // dor-alon: "2 ב 20", rate 28.06% is the per-unit discount -> bundle
+ near(C.promoLine(13.9, ["מבצע שעועית קינג קול 2 ב 20 שח", "", 0, 2, 20, 0.2806, ""], 2), 20);
+ // wolt: dp 12.5 is per unit (rate 16.11% = 1 - 12.5/14.9)
+ near(C.promoLine(14.9, ["12.50 מגבונים", "", 0, 2, 12.5, 0.1611, ""], 2), 25);
+ // shufersal "2ב20", no rate: dp > price -> bundle
+ near(C.promoLine(11.9, ["2ב20 שעועית", "", 0, 2, 20, null, ""], 2), 20);
+ // simple unit price promo
+ near(C.promoLine(10, ["ב-8", "", 0, 1, 8, null, ""], 3), 24);
+});
+
+test("second at N% applies to one unit per group", () => {
+ // bug: "השני ב-50%" was applied to every unit (10 instead of 15)
+ const pr = ["השני ב-50%", "", 0, 2, null, 0.5, ""];
+ near(C.promoLine(10, pr, 2), 15);
+ near(C.promoLine(10, pr, 3), 25);
+ near(C.promoLine(10, ["20% הנחה", "", 0, 1, null, 0.2, ""], 2), 16);
+ // legacy percent value still works
+ near(C.promoLine(10, ["20% הנחה", "", 0, 1, null, 20, ""], 1), 8);
+});
+
+test("promo validity window", () => {
+ assert.ok(C.promoOk(["", "2026-11-30", 0, 1, 5, null, "2026-11-01"], T));
+ assert.ok(!C.promoOk(["", "2026-11-19", 0, 1, 5, null, ""], T));        // ended yesterday
+ assert.ok(!C.promoOk(["", "2026-12-30", 0, 1, 5, null, "2026-11-27"], T)); // not started yet
+ assert.ok(C.promoOk(["", "", 0, 1, 5, null, ""], T));
+});
+
+test("club detection: numbers and legacy strings", () => {
+ assert.ok(!C.isClub(0)); assert.ok(C.isClub(1));
+ assert.ok(!C.isClub("0 - כלל הלקוחות")); assert.ok(!C.isClub(""));       // bug: "" counted as club
+ assert.ok(!C.isClub("כלל הלקוחות")); assert.ok(!C.isClub(null));
+ assert.ok(C.isClub("1=Yellow friends")); assert.ok(C.isClub("(3=פלטינום)"));
+});
+
+test("bestIn picks the cheapest candidate and promo, honoring clubs and dates", () => {
+ const f = { p: { a: 10, b: [12, null] }, pr: { 1: ["ב-7", "", 1, 1, 7, null, ""], 2: ["ב-9", "2026-11-19", 0, 1, 9, null, ""], 3: ["ב-8", "", 0, 1, 8, null, ""] },
+  l: { a: [1, 2], b: [3] } };
+ let r = C.bestIn(f, ["a", "b"], 1, false, T);
+ assert.strictEqual(r.code, "b"); near(r.v, 8); assert.strictEqual(r.why.d, "ב-8");
+ r = C.bestIn(f, ["a", "b"], 1, true, T);
+ assert.strictEqual(r.code, "a"); near(r.v, 7); assert.ok(r.why.club);
+ r = C.bestIn(f, ["a"], 2, false, T);                     // expired promo ignored
+ near(r.v, 20); assert.strictEqual(r.why, null); near(r.reg, 20);
+ assert.strictEqual(C.bestIn(f, ["zzz"], 1, false, T), null);
+});
+
+test("half-kg quantities", () => {
+ near(C.promoLine(10, ["ב-8", "", 0, 1, 8, null, ""], 1.5), 12);
+ assert.strictEqual(C.fmtQty(1.5, true), '1.5 ק"ג');
+ assert.strictEqual(C.fmtQty(2, true), '2 ק"ג');
+ assert.strictEqual(C.kgStep(true), 0.5);
+ assert.strictEqual(C.kgStep(false), 1);
+});
+
+test("bestPair splits the basket between two stores", () => {
+ const M = { s1: { x: { v: 5 }, y: { v: 9 } }, s2: { x: { v: 7 }, y: { v: 4 } }, s3: { x: null, y: { v: 3 } } };
+ const bp = C.bestPair(["s1", "s2", "s3"], ["x", "y"], M);
+ near(bp.sum, 8); assert.deepStrictEqual([bp.a, bp.b], ["s1", "s3"]);
+});
