@@ -1,6 +1,11 @@
 name: nightly-fetch
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Publish even if the run kept much fewer stores than the previous one"
+        type: boolean
+        default: false
   schedule:
     - cron: "0 1 * * *"
 permissions:
@@ -19,22 +24,39 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # the token is not left in .git/config, so third-party code run below cannot push with it
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install israeli-prices==0.2.0
-      - name: Get previous data (fallback for chains that fail today)
+      - name: Get previous data (fallback for stores that fail today)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p prev
-          gh release download data -p sal.db.gz -D prev && gunzip -f prev/sal.db.gz || echo "no previous data"
-      - run: python scripts/fetch.py
+          if gh release view data 2>&1 | grep -qi "release not found"; then
+            echo "no data release yet (first run)"; exit 0
+          fi
+          for i in 1 2 3; do
+            gh release download data -p sal.db.gz -D prev --clobber && break
+            sleep 20
+          done
+          # without yesterday's data there is no fallback and no size check: do not run blind
+          test -f prev/sal.db.gz || { echo "::error::could not download previous data"; exit 1; }
+          gunzip -f prev/sal.db.gz
+      - name: Fetch (fails without publishing if the run is empty or shrank a lot)
+        env:
+          FORCE_PUBLISH: ${{ inputs.force && '1' || '0' }}
+        run: python scripts/fetch.py
       - name: Publish to data release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view data >/dev/null 2>&1 || gh release create data --title "data" --notes "nightly data"
+          # keep the previous night as a second asset before overwriting
+          if [ -f prev/sal.db ]; then gzip -9 -c prev/sal.db > out/sal-prev.db.gz && gh release upload data out/sal-prev.db.gz --clobber; fi
           gh release upload data out/sal.db.gz out/summary.json --clobber
       - run: python scripts/export.py
       - name: Build site
