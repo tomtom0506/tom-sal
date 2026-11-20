@@ -13,35 +13,41 @@
 <title>tom-sal</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#0E1F44;--blue:#1F3A6E;--gold:#D9A940;--silver:#C9D1DC;--bg:#F3F5F8;--card:#fff;--text:#14213D;--muted:#6B7689;--line:#E2E6EC;--green:#1B8A5A;--red:#C0392B;
+:root{--sh:0 1px 3px rgba(14,31,68,.06),0 4px 14px rgba(14,31,68,.05);--navy:#0E1F44;--blue:#1F3A6E;--gold:#D9A940;--silver:#C9D1DC;--bg:#F3F5F8;--card:#fff;--text:#14213D;--muted:#6B7689;--line:#E2E6EC;--green:#1B8A5A;--red:#C0392B;
  --bar:#2F5597;--bar-best:#B8860B;--bar-part:#B9C2D0;--hl:#FFF6DF;--grid:#EDF0F4}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A;--red:#FF7A6B;--bar:#6B93DB;--bar-best:#C99A2E;--bar-part:#3D4E74;--hl:#2A3150;--grid:#1C2B4D}}
-:root[data-theme="dark"]{--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A;--red:#FF7A6B;--bar:#6B93DB;--bar-best:#C99A2E;--bar-part:#3D4E74;--hl:#2A3150;--grid:#1C2B4D}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A;--red:#FF7A6B;--sh:none;--bar:#6B93DB;--bar-best:#C99A2E;--bar-part:#3D4E74;--hl:#2A3150;--grid:#1C2B4D}}
+:root[data-theme="dark"]{--bg:#0A1328;--card:#14213D;--text:#EEF1F6;--muted:#9AA6BA;--line:#24345A;--red:#FF7A6B;--sh:none;--bar:#6B93DB;--bar-best:#C99A2E;--bar-part:#3D4E74;--hl:#2A3150;--grid:#1C2B4D}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Heebo,system-ui,-apple-system,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#132A5C 0%,var(--navy) 100%);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;box-shadow:0 2px 12px rgba(5,12,30,.25)}
 .top{display:flex;align-items:center;gap:10px}
 .top img{width:34px;height:34px;border-radius:9px}
 .top h1{font-size:20px;margin:0;font-weight:700}
 nav{display:flex;margin-top:10px}
-nav button{flex:1;background:none;border:0;color:var(--silver);font:inherit;font-size:16px;padding:10px;border-bottom:3px solid transparent}
+nav button{flex:1;background:none;border:0;color:var(--silver);font:inherit;font-size:15px;padding:10px 4px 9px;border-bottom:3px solid transparent;transition:color .15s,border-color .15s}
 nav button.on{color:#fff;border-color:var(--gold);font-weight:500}
-main{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 90px);max-width:640px;margin:0 auto}
-input[type=search]{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text)}
-.box{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:12px;overflow:hidden}
+nav button .ic{display:block;font-size:18px;line-height:1.1;margin-bottom:1px}
+main{padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 40px);max-width:640px;margin:0 auto}
+button{-webkit-tap-highlight-color:transparent;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input[type=search]{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s}
+input[type=search]:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,169,64,.25)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:12px;overflow:hidden;box-shadow:var(--sh)}
 .row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}
 .row:first-child{border-top:0}
 .grow{flex:1;min-width:0}
 .name{font-weight:500}
 .sub{color:var(--muted);font-size:13px}
-.qty{display:flex;align-items:center;gap:8px}
-.qty b{min-width:44px;text-align:center}
-.qty button,.add{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:18px}
+.qty{display:flex;align-items:center;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:2px;flex:none}
+.qty b{min-width:46px;text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+.qty button{width:30px;height:30px;border-radius:50%;border:0;background:var(--card);color:var(--text);font-size:17px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.add{width:34px;height:34px;border-radius:50%;font-size:19px;transition:transform .1s}
+.add:active,.qty button:active{transform:scale(.9)}
 .add{background:var(--navy);color:#fff;border:0;flex:none}
 h2{font-size:15px;color:var(--muted);font-weight:500;margin:20px 4px 0;display:flex;align-items:center;gap:8px}
 h2 .lnk{margin-inline-start:auto}
 .lnk{background:none;border:0;color:var(--bar);font:inherit;font-size:13px;padding:4px 0;text-decoration:underline}
-.store{padding:14px;scroll-margin-top:130px}
+.store{padding:14px;scroll-margin-top:140px}
 .store .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .total{font-size:22px;font-weight:700}
 .reg{text-decoration:line-through;color:var(--muted);font-size:14px;margin-inline-end:6px}
@@ -53,6 +59,21 @@ h2 .lnk{margin-inline-start:auto}
 details summary{color:var(--muted);font-size:13px;margin-top:6px;cursor:pointer}
 .line{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:4px 0;border-top:1px dashed var(--line)}
 .empty{color:var(--muted);text-align:center;padding:24px 10px}
+.hero{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:26px 18px;text-align:center;margin-top:14px}
+.hero .big{font-size:40px;line-height:1}
+.hero .name{font-size:17px;margin:10px 0 4px}
+.hero .sub{font-size:14px;line-height:1.5}
+.hero ol{text-align:start;color:var(--muted);font-size:14px;line-height:1.7;margin:12px auto 0;max-width:320px;padding-inline-start:20px}
+.cta{display:inline-block;margin-top:14px;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:22px;padding:9px 20px;font:inherit;font-size:15px}
+.av{flex:none;width:36px;height:36px;border-radius:10px;background:var(--grid);color:var(--text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.rank{flex:none;width:24px;height:24px;border-radius:50%;background:var(--grid);color:var(--muted);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-inline-end:6px;vertical-align:1px}
+.best .rank{background:var(--gold);color:#1a1a1a}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+details.bk>summary{list-style:none;display:flex;align-items:center;gap:8px;font-size:15px;color:var(--muted);font-weight:500;margin:20px 4px 0}
+details.bk>summary::-webkit-details-marker{display:none}
+details.bk>summary::after{content:"▾";margin-inline-start:4px;transition:transform .15s}
+details.bk:not([open])>summary::after{transform:rotate(90deg)}
+details.bk>summary .lnk{margin-inline-start:auto}
 .hidden{display:none}
 .tip{padding:12px 14px;border:1px solid var(--gold)}
 .tip .name{font-size:16px}
@@ -82,7 +103,6 @@ details summary{color:var(--muted);font-size:13px;margin-top:6px;cursor:pointer}
 .ver{background:none;border:0;color:#F2C75C;font:inherit;font-size:13px;font-weight:500;padding:0;-webkit-appearance:none;appearance:none;opacity:1}
 .meta{margin-inline-start:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .meta small{color:var(--silver);font-size:12px}
-.fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:6;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:24px;padding:10px 20px;font:inherit;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 #modal{position:fixed;inset:0;z-index:10;background:rgba(5,12,30,.6);display:flex;align-items:flex-end;justify-content:center}
 #modal.hidden{display:none}
 #modal .sheet{background:var(--card);color:var(--text);width:100%;max-width:640px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px)}
@@ -94,7 +114,8 @@ details summary{color:var(--muted);font-size:13px;margin-top:6px;cursor:pointer}
 .cl b{color:var(--gold)}
 /* ---- summary tiles ---- */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0;box-shadow:var(--sh)}
+.tile.wide{background:linear-gradient(135deg,var(--card) 60%,var(--hl) 100%);border-color:var(--gold)}
 .tile.wide{grid-column:1/-1}
 .tile .k{color:var(--muted);font-size:13px}
 .tile .v{font-size:24px;font-weight:700;line-height:1.25}
@@ -138,9 +159,10 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <header>
  <div class="top"><img src="apple-touch-icon.png" alt=""><h1>הסל שלי</h1>
   <div class="meta"><button class="ver" id="ver"></button><small id="upd"></small></div>
+  <button class="hb" id="refresh" aria-label="רענון הנתונים">🔄</button>
   <button class="hb" id="theme" aria-label="מצב יום או לילה">🌙</button>
   <button class="hb" id="help" aria-label="מדריך">❔</button></div>
- <nav><button id="tb" class="on">סל</button><button id="ts">סניפים <span id="nsel"></span></button><button id="tc">מועדונים <span id="ncl"></span></button></nav>
+ <nav><button id="tb" class="on"><span class="ic">🛒</span>סל</button><button id="ts"><span class="ic">🏪</span>סניפים <span id="nsel"></span></button><button id="tc"><span class="ic">💳</span>מועדונים <span id="ncl"></span></button></nav>
 </header>
 <main>
  <section id="vb">
@@ -153,7 +175,6 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
  <section id="vs" class="hidden"><div id="stores"></div></section>
  <section id="vc" class="hidden"><div id="clubs"></div></section>
 </main>
-<button class="fab" id="refresh">🔄 רענון</button>
 <div id="scan" class="hidden"><p>כוון לברקוד ממרחק 15–20 ס"מ, באור טוב</p><div id="reader"></div><label class="photo">📸 לא מצליח? צלם תמונה של הברקוד<input type="file" id="photo" accept="image/*" capture="environment" hidden></label><button id="scanx">ביטול</button></div><div id="scanfile" hidden></div>
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
@@ -173,7 +194,10 @@ const CHANGELOG = [
   "תיקון: סניף שלא עודכן לילה אחד לא נמחק מהבחירה שלך. הוא מוצג עם תאריך הנתונים שלו",
   "תיקון: ירקות ארוזים במשקל קבוע לא מושווים יותר למחיר לק\"ג, וחבילות בגדלים שונים מוצגות בנפרד",
   "תיקון: סריקת ברקוד של ביצים ומוצרים מקובצים מוצאת אותם",
-  "תאריך העדכון למעלה מציג את תאריך הנתונים עצמם"]],
+  "תאריך העדכון למעלה מציג את תאריך הנתונים עצמם",
+  "עיצוב מחודש: כרטיסים רכים יותר, אייקונים בלשוניות, דירוג ממוספר לכל סניף ומסך פתיחה עם הסבר",
+  "כפתור הרענון עבר לשורה העליונה ולא מסתיר יותר את התוכן",
+  "אפשר לכווץ את רשימת הסל כדי לראות מיד את ההשוואה"]],
  ["1.5.1", "31.10.2026", ["סדר ההשוואה: קודם סניפים שיש בהם את כל הסל מהזול ליקר, אחריהם סניפים שחסר בהם מעט, ובסוף השאר", "סינון מחירים חריגים בירקות ומוצרים במשקל, למשל מלפפון ב-₪1.80 לק\"ג, שהם כמעט תמיד טעות יחידות בקובץ הרשת"]],
  ["1.5.0", "30.10.2026", ["לשונית חדשה \"מועדונים\": מסמנים באילו מועדוני רשתות, כרטיסי אשראי ומועדוני הטבות אתה חבר", "מבצעי מועדון נספרים רק ברשתות שסימנת שאתה חבר במועדון שלהן", "הכול נשמר רק בטלפון, בלי מספרי כרטיס או פרטים אישיים"]],
  ["1.4.3", "30.10.2026", ["חישוב מדויק יותר של מבצעי \"X ב-Y\" גם כשמחיר המבצע נמוך ממחיר יחידה", "קופונים והטבות על סכום קנייה לא נספרים יותר כמחיר של מוצר", "רשת שלא עדכנה היום מוצגת עם נתוני אתמול ומסומנת"]],
@@ -264,7 +288,7 @@ const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 const TODAY = new Date().toLocaleDateString("sv-SE");
 
 const S = { stores: [], updated: "", sel: new Set(load("sel", [])), basket: load("basket", {}), chainClubs: new Set(load("chainClubs", [])), memb: load("memb", []),
- cat: null, files: {}, bad: new Set(), view: load("view", "chart"), sq: "" };
+ cat: null, files: {}, bad: new Set(), view: load("view", "chart"), sq: "", bkOpen: load("bkOpen", true) };
 
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
 async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); if ($("q").value.trim().length < 2) $("res").innerHTML = ""; } return S.cat; }
@@ -357,15 +381,17 @@ $("res").addEventListener("click", e => {
 const nmRaw = c => S.cat?.[c]?.[0] || c.replace(/^g:/, "");
 async function renderBasket() {
  const codes = Object.keys(S.basket);
- if (!codes.length) { $("bask").innerHTML = '<div class="empty">הסל ריק. חפש מוצר או סרוק ברקוד כדי להתחיל.</div>'; $("cmp").innerHTML = ""; $("clubnote").innerHTML = ""; return; }
+ if (!codes.length) { $("bask").innerHTML = `<div class="hero"><div class="big">🛒</div><div class="name">הסל ריק</div><div class="sub">חפש מוצר למעלה או סרוק ברקוד 📷, ונראה לך איפה הכי זול.</div>
+  <ol><li>בוחרים סניפים בלשונית "סניפים"</li><li>מוסיפים מוצרים לסל</li><li>מקבלים גרף והמלצה איפה לקנות</li></ol>${S.sel.size ? "" : '<button class="cta" data-goto="s">בחירת סניפים</button>'}</div>`; $("cmp").innerHTML = ""; $("clubnote").innerHTML = ""; return; }
  const cat = await catalog(); await files();
- $("bask").innerHTML = `<h2>בסל · ${codes.length} מוצרים <button class="lnk" id="clrbask">ריקון הסל</button></h2><div class='box'>` + codes.map(c => `<div class="row">
+ $("bask").innerHTML = `<details class="bk" ${S.bkOpen ? "open" : ""}><summary>🛒 בסל · ${codes.length} מוצרים <button class="lnk" id="clrbask">ריקון הסל</button></summary><div class='box'>` + codes.map(c => `<div class="row">
   <div class="grow" data-view="${esc(c)}"><div class="name">${esc(nmRaw(c))} <span class="peek">› מחירים</span></div><div class="sub">${cat[c] ? esc(cat[c][1] || "") : '<span class="miss">לא נמצא בנתונים של היום</span>'}</div></div>
-  <div class="qty"><button data-d="${esc(c)}" data-v="-1" aria-label="פחות">−</button><b>${C.fmtQty(S.basket[c], kg(c))}</b><button data-d="${esc(c)}" data-v="1" aria-label="יותר">+</button></div></div>`).join("") + "</div>";
+  <div class="qty"><button data-d="${esc(c)}" data-v="-1" aria-label="פחות">−</button><b>${C.fmtQty(S.basket[c], kg(c))}</b><button data-d="${esc(c)}" data-v="1" aria-label="יותר">+</button></div></div>`).join("") + "</div></details>";
  compare(cat);
 }
+$("bask").addEventListener("toggle", e => { if (e.target.matches("details.bk")) { S.bkOpen = e.target.open; store("bkOpen", S.bkOpen); } }, true);
 $("bask").addEventListener("click", e => {
- if (e.target.id === "clrbask") { if (confirm("לרוקן את כל הסל?")) { S.basket = {}; store("basket", S.basket); renderBasket(); } return; }
+ if (e.target.id === "clrbask") { e.preventDefault(); if (confirm("לרוקן את כל הסל?")) { S.basket = {}; store("basket", S.basket); renderBasket(); } return; }
  const v = e.target.closest("[data-view]"); if (v) { showProduct(v.dataset.view); return; }
  const c = e.target.dataset.d; if (!c) return;
  S.basket[c] = +(S.basket[c] + e.target.dataset.v * C.kgStep(kg(c))).toFixed(2); if (S.basket[c] <= 0) delete S.basket[c];
@@ -421,7 +447,7 @@ function clubNote() {
 // ---- compare ----
 function compare(cat) {
  clubNote();
- if (!S.sel.size) { $("cmp").innerHTML = '<div class="empty">בחר סניפים בלשונית "סניפים" כדי להשוות.</div>'; return; }
+ if (!S.sel.size) { $("cmp").innerHTML = '<div class="hero"><div class="big">🏪</div><div class="name">עוד לא בחרת סניפים</div><div class="sub">בחר את הסניפים שאתה קונה בהם, ונשווה את הסל ביניהם.</div><button class="cta" data-goto="s">בחירת סניפים</button></div>'; return; }
  const nm = c => esc(nmRaw(c));
  const stores = [...S.sel].filter(known).map(sid => ({ sid, st: stOf(sid), f: S.files[sid] })).filter(x => x.f);
  const M = {};
@@ -488,12 +514,12 @@ function compare(cat) {
   <tr class="sum"><td>סה"כ</td>${top.map(r => `<td>${r.tot.toFixed(2)}${r.missing.length ? `<br><span class="miss">חסרים ${r.missing.length}</span>` : ""}</td>`).join("")}</tr></tbody></table></div>
   <div class="sub" style="padding:8px 14px">✓ = הכי זול בשורה. — = לא נמכר בסניף. ${rows.length > 4 ? `מוצגים ${top.length} הסניפים המובילים מתוך ${rows.length}.` : ""}</div></div>`;
 
- const cards = rows.map(r => {
+ const cards = rows.map((r, i) => {
   const isTop = r === bestSingle;
   const fillHtml = Object.entries(r.fill).map(([sid, x]) => `<div class="fill">➕ השלמה ב${label(sid)}: ${x.items.map(nm).join(", ")} · ${ils(x.v)}</div>`).join("")
    + (r.nowhere.length ? `<div class="fill">לא נמכר באף סניף שבחרת: ${r.nowhere.map(nm).join(", ")}</div>` : "");
   return `<div class="box store ${isTop ? "best" : ""}" id="st-${esc(r.sid)}">
-  <div class="t"><div><div class="name">${esc(r.st.he)}${isTop ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}${staleTag(r.st)}</div></div>
+  <div class="t"><div class="who"><span class="av" aria-hidden="true">${esc([...r.st.he][0] || "?")}</span><div><div class="name"><span class="rank">${i + 1}</span>${esc(r.st.he)}${isTop ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}${staleTag(r.st)}</div></div></div>
   <div class="price"><span class="total">${ils(r.tot)}</span>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
   ${r.missing.length ? `<div class="miss">חסרים ${r.missing.length} מתוך ${n} פריטים: ${r.missing.map(nm).join(", ")}</div>${fillHtml}
    ${r.fillSum ? `<div class="sub"><b>סה"כ כולל השלמה: ${ils(r.full)}</b></div>` : ""}` : ""}
@@ -578,7 +604,7 @@ $("theme").onclick = () => {
 applyTheme();
 
 // ---- refresh ----
-$("refresh").onclick = () => { $("refresh").textContent = "⏳ מרענן…"; location.replace(location.pathname + "?r=" + Date.now()); };
+$("refresh").onclick = () => { $("refresh").textContent = "⏳"; location.replace(location.pathname + "?r=" + Date.now()); };
 
 // ---- modal: changelog + guide ----
 function openModal(html) { $("sheet").innerHTML = '<button class="close" id="mx" aria-label="סגירה">✕</button>' + html; $("modal").classList.remove("hidden"); $("mx").onclick = closeModal; }
@@ -601,7 +627,7 @@ $("help").onclick = () => openModal(`<h3>מדריך</h3>
   <li>מחיר מחוק הוא המחיר בלי מבצעים, והמחיר הגדול כולל מבצעים.</li>
   <li>בלחיצה על "פירוט" רואים מחיר לכל מוצר ואת תנאי המבצע ותוקפו.</li></ul>
  <h4>4. מבצעי מועדון</h4><p>בלשונית "מועדונים" מסמנים באילו מועדוני רשתות אתה חבר. מבצעי מועדון נספרים רק ברשתות שסימנת.</p>
- <h4>5. מתי הנתונים מתעדכנים</h4><p>פעם בלילה, בערך ב־03:00–04:00. תאריך הנתונים מופיע למעלה. סניף שלא עודכן מסומן באדום עם תאריך הנתונים שלו, ונתונים בני יותר משלושה ימים לא מוצגים בכלל. כפתור "רענון" טוען את הגרסה והנתונים העדכניים.</p>
+ <h4>5. מתי הנתונים מתעדכנים</h4><p>פעם בלילה, בערך ב־03:00–04:00. תאריך הנתונים מופיע למעלה. סניף שלא עודכן מסומן באדום עם תאריך הנתונים שלו, ונתונים בני יותר משלושה ימים לא מוצגים בכלל. כפתור 🔄 למעלה טוען את הגרסה והנתונים העדכניים.</p>
  <h4>חשוב לדעת</h4><ul>
   <li>רשתות שהאתר שלהן לא זמין לנו (כרגע קרפור, סופר־פארם, חצי חינם, ויקטורי, מחסני השוק וח. כהן) לא נכללות.</li>
   <li>מבצעים מסוג "2 ב־X" מחושבים לפי פירוש סביר של קובץ הרשת. יחידות מעבר לחבילה מלאה נספרות במחיר רגיל. תמיד אפשר לבדוק את נוסח המבצע ב"פירוט".</li>
@@ -611,6 +637,7 @@ $("help").onclick = () => openModal(`<h3>מדריך</h3>
 function tab(b) { const v = b === true ? "b" : b === false ? "s" : b;
  [["vb", "tb", "b"], ["vs", "ts", "s"], ["vc", "tc", "c"]].forEach(([sec, btn, k]) => { $(sec).classList.toggle("hidden", v !== k); $(btn).classList.toggle("on", v === k); });
  if (v === "b") renderBasket(); if (v === "s") renderStores(); if (v === "c") renderClubs(); }
+document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g) tab(g.dataset.goto); });
 $("tb").onclick = () => tab("b"); $("ts").onclick = () => tab("s"); $("tc").onclick = () => tab("c");
 
 // ---- my clubs & cards (names only, stored on this phone) ----
