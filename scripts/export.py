@@ -54,13 +54,15 @@ def main():
  for code, pid, sid in db.execute("SELECT pi.item_code, pi.pid, p.sid FROM promo_items pi JOIN promos p ON p.pid = pi.pid"):
   links.setdefault(sid, {}).setdefault(code, []).append(pid)
  stores, dates = [], set()
- for sid, chain, store_id, name, address, stale, ddate in db.execute(
-   f"SELECT sid, chain, store_id, name, address, {stale_col}, {date_col} FROM stores ORDER BY chain, name").fetchall():
+ he_col = "chain_he" if "chain_he" in cols else "NULL"
+ src_col = "source" if "source" in cols else "NULL"
+ for sid, chain, store_id, name, address, stale, ddate, chain_he, src in db.execute(
+   f"SELECT sid, chain, store_id, name, address, {stale_col}, {date_col}, {he_col}, {src_col} FROM stores ORDER BY chain, name").fetchall():
   key = f"{chain}-{store_id}"  # stable across nightly runs (sid is not)
   ddate = (ddate or meta.get("data_date") or "")[:10] or None
   dates.add(ddate)
-  stores.append({"sid": key, "chain": chain, "he": he.get(chain, chain), "name": name,
-   "address": address, "stale": int(stale or 0), "date": ddate})
+  stores.append({"sid": key, "chain": chain, "he": he.get(chain) or chain_he or chain, "name": name,
+   "address": address, "stale": int(stale or 0), "date": ddate, "src": src})
   prices = {}
   for c, p in db.execute("SELECT item_code, price FROM prices WHERE sid=?", (sid,)):
    if not p or p <= 0:
