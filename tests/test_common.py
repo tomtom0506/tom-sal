@@ -103,13 +103,18 @@ class Grouping(unittest.TestCase):
 
 
 class Fallback(unittest.TestCase):
-    """bug: a store whose price download failed vanished; fallback only covered whole-chain failures."""
+    """bug: a store whose price download failed vanished; fallback only covered whole-chain failures.
+    Now merge() falls back per store to the previous night, keeping its real date (max 3 days)."""
 
     def make_prev(self, dated):
         db = sqlite3.connect(":memory:")
         db.executescript(fetch.SCHEMA)
         db.execute("ATTACH DATABASE ':memory:' AS prev")
-        db.executescript(fetch.SCHEMA.replace("CREATE TABLE ", "CREATE TABLE prev."))
+        # a pre-1.6.0 style table: no source/chain_he columns, club as text, rate in percent, end 'None'
+        db.execute("CREATE TABLE prev.stores(sid INTEGER PRIMARY KEY, chain, store_id, name, address, city, items INT, promos INT, stale INT DEFAULT 0, data_date TEXT)")
+        for t in ("products", "prices", "promos", "promo_items"):
+            ddl = [l for l in fetch.SCHEMA.split(";") if f"CREATE TABLE {t}(" in l][0]
+            db.execute(ddl.replace(f"CREATE TABLE {t}(", f"CREATE TABLE prev.{t}("))
         rows = [(1, "shufersal", "1", "A", dated), (2, "shufersal", "2", "B", dated), (3, "yellow", "7", "C", "2026-11-10")]
         for sid, ch, st, name, d in rows:
             db.execute("INSERT INTO prev.stores(sid,chain,store_id,name,address,city,items,promos,data_date) VALUES(?,?,?,?,?,?,1,1,?)",
@@ -121,24 +126,22 @@ class Fallback(unittest.TestCase):
             db.execute("INSERT INTO prev.promo_items VALUES(?,?)", (f"{ch}:x{sid}", sid))
         return db
 
-    def test_single_failed_store_is_kept_with_its_date(self):
+    def test_failed_store_is_kept_with_its_date_and_normalized(self):
         db = self.make_prev("2026-11-19")
-        have = {("shufersal", "1")}
-        out = fetch.copy_prev(db, date(2026, 11, 20), set(), {("shufersal", "2")}, have)
-        self.assertEqual([r["store"] for r in out], ["B"])
-        self.assertEqual(db.execute("SELECT stale, data_date FROM stores").fetchall(), [(1, "2026-11-19")])
-        # promo fields are normalized on the way through
-        self.assertEqual(db.execute("SELECT end, club, discount_rate FROM promos").fetchall(), [(None, 1, 0.25)])
+        out = fetch.merge(db, date(2026, 11, 20), {"prev"})
+        self.assertEqual(sorted(r["store"] for r in out), ["A", "B"])
+        self.assertEqual(set(db.execute("SELECT stale, data_date, source FROM stores").fetchall()), {(1, "2026-11-19", "prev")})
+        self.assertEqual(db.execute("SELECT DISTINCT end, club, discount_rate FROM promos").fetchall(), [(None, 1, 0.25)])
 
     def test_old_fallback_is_dropped(self):  # bug: "yesterday" data was carried forever
         db = self.make_prev("2026-11-19")
-        out = fetch.copy_prev(db, date(2026, 11, 20), {"yellow"}, set(), set())
-        self.assertEqual(out, [])
+        out = fetch.merge(db, date(2026, 11, 20), {"prev"})
+        self.assertNotIn("C", [r["store"] for r in out])
 
-    def test_whole_chain_failure(self):
-        db = self.make_prev("2026-11-18")
-        out = fetch.copy_prev(db, date(2026, 11, 20), {"shufersal"}, set(), set())
-        self.assertEqual(sorted(r["store"] for r in out), ["A", "B"])
+    def test_undated_previous_db_counts_as_yesterday(self):
+        db = self.make_prev(None)
+        out = fetch.merge(db, date(2026, 11, 20), {"prev"})
+        self.assertEqual({r["date"] for r in out if r["chain"] == "shufersal"}, {"2026-11-19"})
 
 
 if __name__ == "__main__":
