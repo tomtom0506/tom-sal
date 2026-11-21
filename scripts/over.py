@@ -1,13 +1,19 @@
 """Client for the over.org.il price-transparency API (mirrors the chains' official files, no key needed).
 Docs: https://www.over.org.il/api  ·  tables: /api/prices/tables
 Pure stdlib so it can run and be tested without israeli_prices."""
-import csv, io, json, time, urllib.error, urllib.parse, urllib.request
+import csv, io, json, threading, time, urllib.error, urllib.parse, urllib.request
 from collections import defaultdict
 
 BASE = "https://www.over.org.il/api/prices"
 UA = "price-compare-bot/1.0"
 PAGE = 1000          # API max rows per page
 ID_CHUNK = 150       # promotion ids per request (keeps the URL short)
+MAX_OFFSET = 100000  # API rejects offset > 100000 (HTTP 422)
+PITEM_MAX = 30000    # a promotion batch bigger than this is split (fails fast instead of paging 100 pages first)
+
+
+class TooManyRows(Exception):
+    """The query has more rows than the API lets us page through."""
 
 # over.org.il chain key -> our slug (the israeli_prices slug, so user selections keep working)
 SLUG = {
@@ -40,6 +46,14 @@ class Client:
         self.opener = opener or urllib.request.urlopen
         self.requests = 0
         self.bytes = 0
+        # promotion items are published per chain and promotion ids repeat across a chain's stores:
+        # fetch each promotion once per night and share it between stores (one lock per chain)
+        self.pitem_cache = {}
+        self._locks, self._guard = {}, threading.Lock()
+
+    def chain_lock(self, key):
+        with self._guard:
+            return self._locks.setdefault(key, threading.Lock())
 
     def _get(self, path, params):
         url = f"{self.base}/{path}?{urllib.parse.urlencode(params)}"
@@ -65,7 +79,7 @@ class Client:
     def json(self, path, **params):
         return json.loads(self._get(path, params))
 
-    def table(self, name, **params):
+    def table(self, name, max_rows=MAX_OFFSET, **params):
         """All current rows of a table (CSV pages of 1000), as dicts of strings."""
         out, off = [], 0
         while True:
@@ -75,6 +89,8 @@ class Client:
             if len(rows) < PAGE:
                 return out
             off += PAGE
+            if off > min(max_rows, MAX_OFFSET):
+                raise TooManyRows(f"{name}: more than {off} rows")
 
 
 def num(x):
@@ -107,12 +123,35 @@ def fetch_store(c, key, store_id):
         return None
     promos = c.table("prices_promotions", chain=key, store_id=sid, columns=PROMO_COLS)
     ids = [p["promotion_id"] for p in promos]
-    pitems = []
-    for i in range(0, len(ids), ID_CHUNK):
-        pitems += c.table("prices_promotion_items", chain=key, promotion_id=",".join(ids[i:i + ID_CHUNK]), columns=PITEM_COLS)
+    skipped = []
+    with c.chain_lock(key):
+        todo = [i for i in dict.fromkeys(ids) if (key, i) not in c.pitem_cache]
+        got = []
+        for i in range(0, len(todo), ID_CHUNK):
+            got += promo_items(c, key, todo[i:i + ID_CHUNK], skipped)
+        for i in todo:
+            c.pitem_cache[(key, i)] = []
+        for r in got:
+            c.pitem_cache[(key, r["promotion_id"])].append(r)
+    sold = {r["item_code"] for r in items}
+    # keep only what this store sells: chain-wide promotion lists are far longer than one store's shelf
+    pitems = [r for i in dict.fromkeys(ids) for r in c.pitem_cache.get((key, i), []) if r["item_code"] in sold]
     meta = c.table("prices_stores", chain=key, store_id=sid, columns="store_name,address,city")
-    return {"items": items, "promos": promos, "pitems": pitems, "meta": meta[0] if meta else {},
+    return {"items": items, "promos": promos, "pitems": pitems, "meta": meta[0] if meta else {}, "skipped_promos": skipped,
             "as_of": max((r.get("as_of") or "") for r in items)[:10] or None}
+
+
+def promo_items(c, key, ids, skipped):
+    """Items of these promotions. Some chains (e.g. Yellow) share promotion ids across hundreds of stores, so a
+    batch can exceed the API's paging cap: split it in half; a single promotion that is still too big is skipped."""
+    try:
+        return c.table("prices_promotion_items", chain=key, promotion_id=",".join(ids), columns=PITEM_COLS, max_rows=PITEM_MAX)
+    except TooManyRows:
+        if len(ids) == 1:
+            skipped.append(ids[0])
+            return []
+        h = len(ids) // 2
+        return promo_items(c, key, ids[:h], skipped) + promo_items(c, key, ids[h:], skipped)
 
 
 def split_promos(promos, pitems):

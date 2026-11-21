@@ -54,6 +54,44 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(over.KEY["shufersal"], "shufersal:shufersal")
 
 
+class FetchStore(unittest.TestCase):
+    """Promotion items are chain-wide: fetched once per chain, split when a batch is too big, filtered to the store."""
+
+    def fake_client(self, big=set()):
+        c = over.Client()
+        calls = []
+        def table(name, max_rows=over.MAX_OFFSET, **p):
+            calls.append((name, p.get("promotion_id", "")))
+            if name == "prices_market":
+                return [{"item_code": "a", "item_price": "5", "as_of": "2026-11-21"}, {"item_code": "b", "item_price": "6", "as_of": "2026-11-21"}]
+            if name == "prices_promotions":
+                return [{"promotion_id": i} for i in ("1", "2", "3")]
+            if name == "prices_stores":
+                return [{"store_name": "x"}]
+            ids = p["promotion_id"].split(",")
+            if len(ids) > 1 and big & set(ids):
+                raise over.TooManyRows("too many")
+            if ids == ["3"] and "3" in big:
+                raise over.TooManyRows("too many")
+            return [{"promotion_id": i, "item_code": code} for i in ids for code in ("a", "zzz-not-sold")]
+        c.table = table
+        return c, calls
+
+    def test_shared_cache_and_store_filter(self):
+        c, calls = self.fake_client()
+        d1 = over.fetch_store(c, "cerberus:paz_bo", "257")
+        d2 = over.fetch_store(c, "cerberus:paz_bo", "132")
+        self.assertEqual(sum(1 for n, _ in calls if n == "prices_promotion_items"), 1)  # second store reused the cache
+        self.assertEqual({r["item_code"] for r in d1["pitems"]}, {"a"})                  # only items the store sells
+        self.assertEqual(len(d2["pitems"]), 3)
+
+    def test_oversized_batch_is_split_and_single_giant_promo_skipped(self):
+        c, calls = self.fake_client(big={"3"})
+        d = over.fetch_store(c, "laib:victory", "28")
+        self.assertEqual(d["skipped_promos"], ["3"])
+        self.assertEqual(sorted({r["promotion_id"] for r in d["pitems"]}), ["1", "2"])
+
+
 class SplitPromos(unittest.TestCase):
     def test_item_level_terms_and_coupon_filter(self):
         promos = [{"promotion_id": "1", "description": "2 ב 20", "discounted_price": "", "discount_rate": "", "min_qty": "",
