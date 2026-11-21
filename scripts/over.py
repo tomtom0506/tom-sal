@@ -12,6 +12,12 @@ MAX_OFFSET = 100000  # API rejects offset > 100000 (HTTP 422)
 PITEM_MAX = 30000    # a promotion batch bigger than this is split (fails fast instead of paging 100 pages first)
 
 
+# Offset paging is only safe with a stable sort: without one the API returned the same row on two pages
+# and skipped another (Yochananof 19 on 21.11: 346 duplicates = 346 products missing).
+ORDER = {"prices_market": "item_code", "prices_promotions": "promotion_id", "prices_promotion_items": "promotion_id,item_code",
+         "prices_stores": "chain,store_id", "prices_products": "chain,item_code", "prices_coverage": "chain,store_id,snapshot_date"}
+
+
 class TooManyRows(Exception):
     """The query has more rows than the API lets us page through."""
 
@@ -82,6 +88,7 @@ class Client:
     def table(self, name, max_rows=MAX_OFFSET, **params):
         """All current rows of a table (CSV pages of 1000), as dicts of strings."""
         out, off = [], 0
+        params.setdefault("order", ORDER.get(name, ""))
         while True:
             body = self._get(f"table/{name}", {**params, "format": "csv", "limit": PAGE, "offset": off})
             rows = list(csv.DictReader(io.StringIO(body.decode("utf-8-sig"))))
@@ -137,7 +144,13 @@ def fetch_store(c, key, store_id):
     # keep only what this store sells: chain-wide promotion lists are far longer than one store's shelf
     pitems = [r for i in dict.fromkeys(ids) for r in c.pitem_cache.get((key, i), []) if r["item_code"] in sold]
     meta = c.table("prices_stores", chain=key, store_id=sid, columns="store_name,address,city")
+    # completeness check: how many items over.org.il itself read from the store's latest price file
+    cov = c.json("table/prices_coverage", chain=key, store_id=sid, columns="snapshot_date,price_items",
+                 order="-snapshot_date", limit=1).get("rows") or []
+    expected = int(float(cov[0]["price_items"])) if cov and cov[0].get("price_items") else None
     return {"items": items, "promos": promos, "pitems": pitems, "meta": meta[0] if meta else {}, "skipped_promos": skipped,
+            # rows, not unique codes: a chain's file may list the same code twice, and over.org.il counts rows
+            "expected_items": expected, "got_items": len(items),
             "as_of": max((r.get("as_of") or "") for r in items)[:10] or None}
 
 

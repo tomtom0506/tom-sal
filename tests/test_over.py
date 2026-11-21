@@ -31,6 +31,17 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(len(rows), 2 * over.PAGE + 7)
         self.assertEqual(calls, [0, 1000, 2000])
 
+    def test_every_page_request_has_a_stable_sort(self):
+        # bug: without a sort the API repeated rows across pages and skipped others (346 products lost in one store)
+        seen = []
+        def opener(req, timeout):
+            seen.append(req.full_url)
+            return FakeResp(csv_body(["item_code"], [{"item_code": 1}]))
+        over.Client(opener=opener).table("prices_market", chain="x")
+        over.Client(opener=opener).table("prices_promotion_items", chain="x", promotion_id="1")
+        self.assertIn("order=item_code", seen[0])
+        self.assertIn("order=promotion_id%2Citem_code", seen[1])
+
     def test_retries_on_429_then_gives_up_on_404(self):
         n = {"c": 0}
         def opener(req, timeout):
@@ -75,6 +86,7 @@ class FetchStore(unittest.TestCase):
                 raise over.TooManyRows("too many")
             return [{"promotion_id": i, "item_code": code} for i in ids for code in ("a", "zzz-not-sold")]
         c.table = table
+        c.json = lambda path, **p: {"rows": [{"snapshot_date": "2026-11-21", "price_items": "2"}]}
         return c, calls
 
     def test_shared_cache_and_store_filter(self):
@@ -84,6 +96,7 @@ class FetchStore(unittest.TestCase):
         self.assertEqual(sum(1 for n, _ in calls if n == "prices_promotion_items"), 1)  # second store reused the cache
         self.assertEqual({r["item_code"] for r in d1["pitems"]}, {"a"})                  # only items the store sells
         self.assertEqual(len(d2["pitems"]), 3)
+        self.assertEqual((d1["expected_items"], d1["got_items"]), (2, 2))
 
     def test_oversized_batch_is_split_and_single_giant_promo_skipped(self):
         c, calls = self.fake_client(big={"3"})

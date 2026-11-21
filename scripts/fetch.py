@@ -309,6 +309,11 @@ def main():
    errors.append({"chain": k[0], "store": k[1], "source": "over", "stage": "prices", "error": f"{type(e).__name__}: {str(e)[:120]}"})
    continue
   if data:
+   exp, got = data.get("expected_items"), data.get("got_items")
+   # a row or two can be missing on over.org.il's side too (an invalid row in the chain's file): flag real gaps only
+   if exp and got is not None and exp - got > max(3, exp * 0.002):
+    errors.append({"chain": k[0], "store": k[1], "source": "over", "stage": "check",
+     "error": f"incomplete: got {got} rows, over.org.il read {exp} from the store's file"})
    insert_over(ovdb, k[0], over_jobs[k][1], data, he.get(k[0]) or over_he.get(over_jobs[k][0]))
  ovdb.commit()
  n_off = off.execute("SELECT COUNT(*) FROM stores").fetchone()[0]
