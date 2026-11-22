@@ -135,6 +135,18 @@ class Grouping(unittest.TestCase):
         self.assertEqual(k(7), k(8))
         self.assertNotEqual(k(9), k(7))                              # smoked deli turkey at 110/kg split by the price guard
 
+    def test_potato_vs_apple_and_cut_off_sizes(self):
+        # from Tomer's table: Osher Ad potatoes ("תפוח אדמה", singular) and ground beef "1.2 ק"" were not matched
+        self.assertEqual(c.produce_key("תפוח אדמה תפזורת")[0], c.produce_key("תפוא לבן ישראל")[0].replace(" לבן", ""))
+        self.assertNotEqual(c.produce_key("תפוח עץ סמיט")[0], c.produce_key("תפוח אדמה")[0])
+        self.assertEqual(c.size_tag('בקר טחון עטרה 1.2 ק"'), '1.2 ק"ג')
+        f = {}
+        g = c.group_products([("7290000000001", 'בקר טחון עטרה 1.2 ק"', 0), ("7290000000002", "בקר טחון טרי", 1)], factors=f)
+        self.assertEqual(g["7290000000001"], g["7290000000002"])
+        self.assertAlmostEqual(f["7290000000001"], 1000 / 1200)
+        # frozen salmon whose name the chain cut off ("קפ") is not fresh salmon
+        self.assertEqual(c.produce_key("פילה סלמון נורבגי קפ")[0], c.produce_key("פילה סלמון קפוא")[0])
+
     def test_aliases_for_saved_baskets(self):
         al = {}
         c.group_products([("a:1", "בצל יבש", 1), ("b:2", "בצל", 1)], aliases=al)

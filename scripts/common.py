@@ -125,7 +125,8 @@ def norm_name(n):
     return " ".join(words[:4]).strip()
 
 
-_UNITS = [(r"ק\"ג|קג|קילו", "ק\"ג"), (r"גרם|גר'?|ג'?", "גרם"), (r"מ\"ל|מל", "מ\"ל"), (r"ליטר|ל'?", "ליטר"),
+# 'ק"' alone: the chain's file cut the name off mid-unit ("בקר טחון עטרה 1.2 ק"")
+_UNITS = [(r"ק\"ג|קג|קילו|ק\"(?!ג)", "ק\"ג"), (r"גרם|גר'?|ג'?", "גרם"), (r"מ\"ל|מל", "מ\"ל"), (r"ליטר|ל'?", "ליטר"),
           (r"יחידות|יח'?", "יח׳")]
 SIZE_RE = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)\s*(" + "|".join(u for u, _ in _UNITS) + r")(?![א-ת])")
 
@@ -170,7 +171,7 @@ PRODUCE = set("""
 בצל שום חסה עגבניה עגבניות מלפפון מלפפונים גזר תפוחי תפוא בטטה פלפל חציל קישוא קישואים כרוב כרובית ברוקולי סלק
 צנון צנונית תרד מנגולד פטרוזיליה כוסברה שמיר נענע בזיליקום כרפס סלרי פטריות פטריה שמפיניון אבוקדו לימון לימונים
 תפוז תפוזים קלמנטינה קלמנטינות מנדרינה אשכולית בננה בננות ענבים ענב אגס אגסים אפרסק אפרסקים נקטרינה שזיף שזיפים
-משמש מנגו אננס אבטיח מלון תות תותים קיווי רימון רימונים אפרסמון תמר תמרים תאנים תאנה דובדבן דובדבנים קולרבי לפת
+תפוח משמש מנגו אננס אבטיח מלון תות תותים קיווי רימון רימונים אפרסמון תמר תמרים תאנים תאנה דובדבן דובדבנים קולרבי לפת
 ארטישוק אספרגוס ג'ינג'ר גינגר זוקיני דלעת דלורית שעועית ירוקה במיה חסות פומלה פומלית ליים פסיפלורה ליצי קומקוואט
 סלמון דג אמנון מושט לברק דניס בורי מוסר פורל קרפיון הליבוט נסיכת בקלה טונה שרימפס
 בקר טחון עוף חזה שוקיים שוקיות כרעיים כנפיים פרגית פרגיות הודו כבש טלה עגל אנטריקוט סינטה צלי פילה כבד לבבות
@@ -181,7 +182,8 @@ PRODUCE = set("""
 PRODUCE_KEEP = set("""
 קפוא קפואה קפואים אורגני אורגנית ירוק ירוקה ירוקים אדום אדומה אדומים צהוב צהובה צהובים כתום לבן לבנה לבנים שחור שחורים
 סגול שרי תמר מגי עגולה עגול ערבית אייסברג לאליק לליק סלנובה סנלובה רומית גמביט גביטה משי קיסר בייבי שלם שלמה מחולק
-טחון אדמה מתוק מתוקה חריף חריפה כנפיים קלוף מקולף זעיר
+טחון אדמה מתוק מתוקה חריף חריפה כנפיים קלוף מקולף זעיר בטטה ירושלמי
+גאלה סמיט גרני פינק ליידי יונתן זהוב מוזהב חרמון סטארקינג פוגי פוג'י קריפס אנה ברייבורן
 """.split())
 FISH = {"סלמון", "דג", "אמנון", "מושט", "לברק", "דניס", "בורי", "מוסר", "פורל", "קרפיון", "הליבוט", "נסיכת", "בקלה", "טונה"}
 # processed products that merely contain a produce word stay as they are
@@ -203,19 +205,24 @@ PRODUCE_DESC_BY_HEAD = {"בצל": {"יבש", "לבן"}, "שום": {"יבש", "ל
 PRODUCE_SYN = {"סגול": "אדום", "עגבניות": "עגבניה", "מלפפונים": "מלפפון", "תפוזים": "תפוז", "לימונים": "לימון",
                "בננות": "בננה", "קישואים": "קישוא", "תותים": "תות", "אגסים": "אגס", "תמרים": "תמר", "רימונים": "רימון",
                "פרגיות": "פרגית", "שוקיות": "שוקיים", "תאנים": "תאנה", "דובדבנים": "דובדבן", "שזיפים": "שזיף",
-               "אפרסקים": "אפרסק", "קלמנטינות": "קלמנטינה", "חסות": "חסה", "תפוא": "תפוחי אדמה",
+               "אפרסקים": "אפרסק", "קלמנטינות": "קלמנטינה", "חסות": "חסה", "תפוחים": "תפוח",
                "מוקפא": "קפוא", "מקפוא": "קפוא", "מוקפאת": "קפואה", "קפואות": "קפואים", "עגבנייה": "עגבניה",
-               "סנלובה": "סלנובה", "לליק": "לאליק", "גביטה": "גמביט"}
+               "סנלובה": "סלנובה", "לליק": "לאליק", "גביטה": "גמביט",
+               # names cut off by the chain's 20-character limit: "פילה סלמון נורבגי קפ" is frozen
+               "קפ": "קפוא", "קפו": "קפוא", "מוקפ": "קפוא", "מוקפא": "קפוא", "אורג": "אורגני", "אורגנ": "אורגני"}
 
 
 def produce_key(name):
     """-> (key, display) for a fresh produce / meat / fish item, or None. key ignores word order and wording that does
     not change the product; display keeps the chain's order of the remaining words."""
     n = BIDI.sub("", name or "")
+    # "תפוח אדמה" is one word (potato); "תפוח" alone is an apple
+    n = re.sub(r"תפוח(?:י)?\s+אדמה|תפו\"א|תפוא", "תפוחי_אדמה", n)
     if NOT_PRODUCE.search(n) or re.search(r"(?i)\bpuff\b", n):
         return None
     n = re.sub(r"(\d)([א-ת])", r"\1 \2", re.sub(r"([א-ת])(\d)", r"\1 \2", n))
-    words = [w for w in re.sub(r"[\"'׳״()\[\].,*/\\\-+:!%`]", " ", n).split() if re.fullmatch(r"[א-ת]{2,}|[א-ת]", w)]
+    words = [w.replace("_", " ") for w in re.sub(r"[\"'׳״()\[\].,*/\\\-+:!%`]", " ", n).split()
+             if re.fullmatch(r"[א-ת]{2,}|[א-ת]|תפוחי_אדמה", w)]
     words = [PRODUCE_SYN.get(w, w) for w in words if w not in BRANDS and w not in STOP_WORDS]
     words = [x for w in words for x in w.split()]
     core = [w for w in words if w not in PRODUCE_DESC]
@@ -252,7 +259,7 @@ def _old_group(code, name, w):
     return None
 
 
-def group_products(rows, aliases=None, factors=None, prices=None, max_ratio=1.8):
+def group_products(rows, aliases=None, factors=None, prices=None, max_ratio=2.2):
     """rows: iterable of (code, name, weighted). Returns {code: group_name} for codes that belong to a cross-chain group.
     Weighted (price per kg) and per-unit items with the same name are split, so a kg price is never compared to a unit price.
     aliases: optional dict filled with {old group name: new group name} for saved baskets.
