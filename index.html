@@ -184,8 +184,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.8.0";
+const VERSION = "1.8.1";
 const CHANGELOG = [
+ ["1.8.1", "23.11.2026", ["דגים, בשר, ירקות ופירות טריים מאוחדים בין הרשתות: למשל \"סלמון\" אחד במקום עשרות שמות שונים, וכך הוא נמצא ברוב הסופרים במקום ב-2-3 בלבד. שם הספק או המשחטה (עטרה, מחפוד, עוף הכפר...) לא מפצל יותר את המוצר", "בשר טחון, עוף, בצל וחסה נמצאים ברוב הסופרים: כל רשת קוראת להם אחרת, ועכשיו הם מזוהים כאותו מוצר", "אריזה במשקל קבוע של מוצר טרי (למשל בשר טחון 500 גרם) מושווית לפי מחיר לק\"ג מול מה שנמכר בדלפק", "חיפוש: המוצר עצמו מופיע לפני מוצרים שרק מכילים את המילה (בצל לפני חטיף בטעם בצל), והחיפוש מוצא גם את השמות המקוריים של הרשתות", "סל ששמרת עובר אוטומטית לשמות החדשים"]],
  ["1.8.0", "22.11.2026", ["תחליף דומה: כשמוצר שבחרת לא נמכר בסניף, נבחר המוצר הכי קרוב באותו סניף, למשל קטשופ אסם 750 גרם במקום קטשופ היינץ 700 גרם, ומסומן ב-🔄", "תחליף הוא תמיד אותו סוג מוצר ובגודל דומה (עד 20% הבדל). לא מחליפים טעם, גרסה (חריף, מופחת סוכר, אורגני) או מארז", "ליד כל תחליף מוצג המחיר ל-100 גרם או ל-100 מ\"ל, כדי שההבדל בגודל יהיה שקוף", "לכל מוצר בסל אפשר לבחור \"רק המוצר הזה\" כדי לא לקבל תחליף", "סניף שיש בו את כל הסל רק בעזרת תחליפים מדורג אחרי סניף שיש בו את כל המוצרים המקוריים"]],
  ["1.7.1", "21.11.2026", ["תיקון: בכל סניף חסרו כ-1% מהמוצרים (למשל כ-350 ביוחננוף אור יהודה גדול) בגלל דפדוף לא יציב בהורדה מ-over.org.il. עכשיו כל המוצרים נטענים, ויש בדיקה לילית שמספרם תואם לקובץ של הסניף"]],
  ["1.7.0", "21.11.2026", ["רשתות חדשות באזור: קרפור, סופר־פארם וויקטורי", "מקור נתונים חדש: over.org.il, שמרכז את קובצי השקיפות של כל הרשתות. אתרי הרשתות עצמם משמשים לגיבוי ולבדיקה לילית שהמחירים זהים", "מבצעים מדויקים יותר: לכל מוצר במבצע נשמר מחיר המבצע שלו, וקופונים ומבצעים שמותנים בסכום קנייה מסוננים לפי הסימון של הרשת"]],
@@ -326,7 +327,21 @@ const S = { stores: [], updated: "", sel: new Set(load("sel", [])), basket: load
  cat: null, subs: null, exact: new Set(load("exact", [])), files: {}, bad: new Set(), view: load("view", "chart"), sq: "", bkOpen: load("bkOpen", true) };
 
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
-async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); if ($("q").value.trim().length < 2) $("res").innerHTML = ""; } return S.cat; }
+async function catalog() {
+ if (!S.cat) {
+  $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>';
+  S.cat = await getJSON("data/catalog.json");
+  // products merged under a new name since the basket was saved: move them to the new name
+  const al = S.cat._alias || {}; let moved = false;
+  for (const c of Object.keys(S.basket)) {
+   const nw = c.startsWith("g:") && al[c.slice(2)] ? "g:" + al[c.slice(2)] : null;
+   if (nw && S.cat[nw]) { S.basket[nw] = (S.basket[nw] || 0) + S.basket[c]; delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
+  }
+  if (moved) { store("basket", S.basket); store("exact", [...S.exact]); }
+  if ($("q").value.trim().length < 2) $("res").innerHTML = "";
+ }
+ return S.cat;
+}
 const known = sid => S.stores.some(s => s.sid === sid);
 // one failing store file must not blank the whole basket: load what we can, remember what failed
 // substitutes are only needed for the comparison: load once, never block the basket on them
@@ -395,7 +410,8 @@ async function search() {
  const cat = await catalog(); await files();
  const words = q.split(/\s+/).filter(Boolean), digits = /^\d{4,}$/.test(q), full = [], part = [], pin = [];
  for (const code in cat) {
-  const e = cat[code], t = e[0] + " " + (e[1] || "");
+  if (code[0] === "_") continue;
+  const e = cat[code], t = e[0] + " " + (e[1] || "") + " " + (e[6] || "");
   if (digits) { if (code.includes(q) || (e[5] && e[5].some(x => x.includes(q)))) full.push(code); continue; }
   let k = 0; for (const w of words) if (t.includes(w)) k++;
   // a generic group ("מלפפון") whose whole name appears in the query ("מלפפון ירוק") is pinned to the top
@@ -407,13 +423,17 @@ async function search() {
  const L = loaded();
  const have = c => L.filter(s => cands(c).some(x => S.files[s].p[x])).length;
  const sc = {}; out.forEach(c => sc[c] = have(c));
- out.sort((a, b) => sc[b] - sc[a] || (b.startsWith("g:") - a.startsWith("g:")) || cat[a][0].length - cat[b][0].length);
+ // the product itself before products that merely contain the word: "בצל" = onions, then onion-flavored snacks
+ // "בשר" in a search means beef ("בשר טחון" = "בקר טחון")
+ const SYN = { "בשר": ["בקר"] }, qw = new Set(words.flatMap(w => [w, ...(SYN[w] || [])]));
+ const head = c => qw.has(cat[c][0].split(/\s+/)[0]) ? 1 : 0;
+ out.sort((a, b) => head(b) - head(a) || sc[b] - sc[a] || (b.startsWith("g:") - a.startsWith("g:")) || cat[a][0].length - cat[b][0].length);
  out.unshift(...pin.sort((a, b) => cat[b][0].length - cat[a][0].length).map(c => (sc[c] = have(c), c)));
  $("res").innerHTML = out.length ? '<div class="box">' + out.slice(0, 30).map(c => {
   const [n, m, qn, u] = cat[c];
   let lo = null; L.forEach(s => { const r = best(s, c, 1); if (r && (lo === null || r.unit < lo)) lo = r.unit; });
   return `<div class="row"><div class="grow" data-view="${esc(c)}"><div class="name">${esc(n)} <span class="peek">› מחירים</span></div>
-   <div class="sub">${lo !== null ? `<span class="from">מ-${ils(lo)}${kg(c) ? ' לק"ג' : ""}</span> · ` : ""}${c.startsWith("g:") ? "כל הרשתות" + (cat[c][4] ? " · במשקל" : "") : esc(m || "") + " " + (qn ? esc(qn + " " + (u || "")) : "")} · ב-${sc[c]} מתוך ${S.sel.size} סניפים</div></div>
+   <div class="sub">${lo !== null ? `<span class="from">מ-${ils(lo)}${kg(c) ? ' לק"ג' : ""}</span> · ` : ""}${c.startsWith("g:") ? "כל הרשתות" + (cat[c][4] ? " · במשקל" : "") : [esc(m || ""), esc(qtyTxt(qn, u))].filter(Boolean).join(" · ") || "מוצר"} · ב-${sc[c]} מתוך ${S.sel.size} סניפים</div></div>
    <button class="add" data-add="${esc(c)}" aria-label="הוסף לסל">+</button></div>`;
  }).join("") + "</div>" : '<div class="empty">לא נמצא מוצר</div>';
 }
@@ -426,6 +446,7 @@ $("res").addEventListener("click", e => {
 
 // ---- basket ----
 const nmRaw = c => S.cat?.[c]?.[0] || c.replace(/^g:/, "");
+const qtyTxt = (qn, u) => qn && u && !/^\s*\d/.test(u) ? `${qn} ${u}` : "";
 async function renderBasket() {
  const codes = Object.keys(S.basket);
  // first time only: substitutes arrive after the basket is shown, then the comparison is redrawn once with them
@@ -486,7 +507,7 @@ async function showProduct(c) {
   body += `<h4>פירוט ומבצעים</h4>` + have.map((x, i) => `<div class="line"><span><b>${esc(x.st.he)}</b>${i === 0 ? '<span class="badge">הכי זול</span>' : ""}<br><span class="sub">${esc(x.st.name)}</span>${staleTag(x.st)}${promoTag(x.r.why)}</span>
    <span class="price"><b>${ils(x.r.unit)}</b>${x.r.regp - x.r.unit > 0.005 ? `<span class="reg">${ils(x.r.regp)}</span>` : ""}</span></div>`).join("");
  }
- openModal(`<h3>${esc(n)}</h3><div class="sub">${c.startsWith("g:") ? "כל הרשתות" + (kg(c) ? " · מחיר לק\"ג" : "") : esc(m || "") + " " + (qn ? esc(qn + " " + (u || "")) : "")}</div>
+ openModal(`<h3>${esc(n)}</h3><div class="sub">${c.startsWith("g:") ? "כל הרשתות" + (kg(c) ? " · מחיר לק\"ג" : "") : [esc(m || ""), esc(qtyTxt(qn, u))].filter(Boolean).join(" · ")}</div>
   <button class="addbig" data-addsheet="${esc(c)}">➕ הוסף לסל</button>${body}
   ${none.length ? `<h4>לא נמכר ב־${none.length} סניפים</h4>` + none.map(x => { const r = !S.exact.has(c) && bestOrSub(x.st.sid, c, 1);
    return r ? `<div class="line"><span><b>${esc(x.st.he)}</b> <span class="sub">${esc(x.st.name)}</span>${subLine(c, r)}</span><span class="price"><b>${ils(r.unit)}</b></span></div>`

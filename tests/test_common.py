@@ -86,12 +86,59 @@ class Grouping(unittest.TestCase):
         self.assertEqual(c.size_tag("עגבניה שרי במשקל"), "")
         self.assertEqual(c.size_tag("3 גבינות"), "")
 
-    def test_packed_not_compared_to_per_kg(self):  # bug: 500g pack price compared to price per kg
+    def test_packed_produce_compared_per_kg(self):
+        # bug (v1.5): a 500 g pack price was compared to a per-kg price. Now the pack joins the product
+        # with its price converted to per kg (x2), never compared as is.
+        f = {}
         g = c.group_products([("shufersal:1", "עגבניות שרי ארוז 500 גרם", 0),
                               ("rami-levy:2", "עגבניה שרי במשקל", 1),
-                              ("yellow:3", "עגבניה שרי", 1)])
+                              ("yellow:3", "עגבניה שרי", 1)], factors=f)
         self.assertEqual(g["rami-levy:2"], g["yellow:3"])
-        self.assertNotEqual(g["shufersal:1"], g["rami-levy:2"])
+        self.assertEqual(g["shufersal:1"], g["rami-levy:2"])
+        self.assertEqual(f, {"shufersal:1": 2.0})
+
+    def test_fresh_items_merge_across_chains(self):
+        # Tomer: "no fresh salmon, no ground beef, no onion, no lettuce" - each chain names them differently
+        rows = [("shufersal:1", "נתחי סלמון טרי שופרסל לק\"ג", 1), ("tiv-taam:2", "פילה סלמון פרוס טרי סקין", 1),
+                ("yoh:3", "סלמון טרי", 1), ("x:4", "פילה סלמון קפוא", 1), ("7290000000005", "סלמון מעושן 100 גרם", 0),
+                ("a:6", "טחון בקר פרימיום טרי", 1), ("b:7", "בקר טחון טרי", 1), ("c:8", "נתח בשר בקר טחון", 1),
+                ("d:9", "בשר טחון טרי", 1), ("e:10", "בשר בקר טחון 1 קג", 0), ("f:11", "עוף טחון", 1),
+                ("g:12", "בצל יבש", 1), ("h:13", "בצל", 1), ("i:14", "בצל לבן ישראלי", 1), ("j:15", "בצל ירוק", 0),
+                ("k:16", "בצל סגול", 1), ("l:17", "בצל אדום", 1), ("7290000000018", "חסה ערבית", 0), ("7290000000019", "חסה ערבית שקית", 0),
+                ("o:20", "חסה עגולה", 0), ("7290000000021", "תפו שמנת בצל 50 גר", 0), ("7290000000022", "מרק בצל 400 גרם", 0)]
+        f = {}
+        g = c.group_products(rows, factors=f)
+        same = lambda *ks: len({g.get(k) for k in ks}) == 1 and g.get(ks[0]) is not None
+        self.assertTrue(same("shufersal:1", "tiv-taam:2", "yoh:3"))       # fresh salmon
+        self.assertNotEqual(g["x:4"], g["yoh:3"])                          # frozen is not fresh
+        self.assertNotIn("7290000000005", g)                               # smoked salmon (barcode): a packaged product
+        self.assertTrue(same("a:6", "b:7", "c:8", "d:9", "e:10"))          # ground beef, incl. a 1 kg pack per kg
+        self.assertEqual(f["e:10"], 1.0)
+        self.assertNotEqual(g["f:11"], g["a:6"])                           # chicken is not beef
+        self.assertTrue(same("g:12", "h:13", "i:14"))                      # onion
+        self.assertTrue(same("k:16", "l:17"))                              # red = purple onion
+        self.assertNotEqual(g["j:15"], g["h:13"])                          # green onion is another vegetable
+        self.assertTrue(same("7290000000018", "7290000000019"))                              # lettuce with a barcode, sold per unit
+        self.assertNotEqual(g["o:20"], g["7290000000018"])                          # round lettuce is another kind
+        self.assertNotIn("7290000000021", g); self.assertNotIn("7290000000022", g)  # onion snacks / soup stay products
+
+    def test_suppliers_ignored_and_guards(self):
+        rows = [("1", "חזה עוף טרי עטרה הרב", 1), ("2", "חזה עוף טרי ארוז שלי קג", 1), ("3", "חזה עוף טרי מחפוד אר", 1),
+                ("4", "טחון מהצומח 500ג טבע דלי", 0), ("5", "בשר טחון טרי", 1), ("6", "בשר טחון מקפוא עטרה", 1),
+                ("7", "חזה הודו טרי", 1), ("8", "חזה הודו טרי ארוז", 1), ("9", "חזה הודו גולן", 1)]
+        g = c.group_products([(f"729000000000{k}", n, w) for k, n, w in rows],
+                             prices={"7290000000007": 40, "7290000000008": 42, "7290000000009": 110})
+        k = lambda i: g.get(f"729000000000{i}")
+        self.assertTrue(k(1) == k(2) == k(3) == "חזה עוף")        # supplier names do not split a product
+        self.assertNotEqual(k(4), k(5))                              # plant-based "ground" is not beef
+        self.assertNotEqual(k(6), k(5))                              # frozen (any spelling) is not fresh
+        self.assertEqual(k(7), k(8))
+        self.assertNotEqual(k(9), k(7))                              # smoked deli turkey at 110/kg split by the price guard
+
+    def test_aliases_for_saved_baskets(self):
+        al = {}
+        c.group_products([("a:1", "בצל יבש", 1), ("b:2", "בצל", 1)], aliases=al)
+        self.assertEqual(al.get("בצל יבש"), "בצל")
 
     def test_weighted_vs_unit_split(self):
         g = c.group_products([("a:1", "כרובית", 1), ("b:1", "כרובית", 1), ("c:1", "כרובית", 0)])
