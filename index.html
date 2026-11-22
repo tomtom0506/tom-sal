@@ -184,8 +184,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.8.3";
+const VERSION = "1.8.4";
 const CHANGELOG = [
+ ["1.8.4", "23.11.2026", ["חלב, תפוחי אדמה ומלפפון נמצאים גם ברשתות שבהן לא נמצאו קודם, למשל ביוחננוף", "מוצר ששמו נקטע בקובץ הרשת (\"חלב תנובה 3% שומן 1\") מקבל את הגודל שלו לפי יחידת המידה שהרשת פרסמה, ולכן מקבל תחליף דומה", "מילים כמו \"שומן\" ו\"טרי\" לא מונעות יותר התאמה בין \"חלב תנובה 3% שומן\" ל\"טרה חלב 3%\"", "תפוח אדמה לבן, קטן או גורמה הוא תפוח אדמה רגיל", "ירק שנמכר בסניף אחד לק\"ג ובסניף אחר ליחידה או באריזה מוצע כתחליף, כשהמחירים קרובים", "מוצר שהוספת לסל לפי ברקוד ובינתיים אוחד עם מוצרים דומים עובר אוטומטית למוצר המאוחד"]],
  ["1.8.3", "23.11.2026", ["תיקון: מוצר שעבר לשם חדש (למשל \"תפוח אדמה לאפיה\" שהפך ל\"תפוחי אדמה\") הופיע בסל עם כמות NaN ולא היה אפשר למחוק אותו. עכשיו הוא עובר לשם החדש בלי כפילות, וכמות לא תקינה שנשמרה בטלפון מתנקה אוטומטית"]],
  ["1.8.2", "23.11.2026", ["מוצר שחסר בסניף לא נספר יותר כ-0: בסכום הכולל, בטבלה ובגרף הוא נספר לפי המחיר הממוצע שלו בשאר הסניפים שבחרת, ומסומן ב-~. כך סניף שחסרים בו מוצרים לא נראה זול יותר בטעות", "תפוחי אדמה: גם \"תפוח אדמה\" (ביחיד, כמו באושר עד) מזוהה, ולכן מופיע תפוח האדמה הרגיל ולא רק זן מיוחד ויקר", "בשר טחון: אריזה ששמה נקטע בקובץ הרשת (\"1.2 ק\"\") נספרת לפי ק\"ג. באושר עד, למשל, מוצג ₪37.42 לק\"ג במקום ₪89.80", "דג קפוא ששמו נקטע (\"קפ\") לא נספר יותר כדג טרי", "טווח המחירים הסביר בתוך מוצר מאוחד הורחב, כדי שבשר טחון זול לא יוצא מההשוואה"]],
  ["1.8.1", "23.11.2026", ["דגים, בשר, ירקות ופירות טריים מאוחדים בין הרשתות: למשל \"סלמון\" אחד במקום עשרות שמות שונים, וכך הוא נמצא ברוב הסופרים במקום ב-2-3 בלבד. שם הספק או המשחטה (עטרה, מחפוד, עוף הכפר...) לא מפצל יותר את המוצר", "בשר טחון, עוף, בצל וחסה נמצאים ברוב הסופרים: כל רשת קוראת להם אחרת, ועכשיו הם מזוהים כאותו מוצר", "אריזה במשקל קבוע של מוצר טרי (למשל בשר טחון 500 גרם) מושווית לפי מחיר לק\"ג מול מה שנמכר בדלפק", "חיפוש: המוצר עצמו מופיע לפני מוצרים שרק מכילים את המילה (בצל לפני חטיף בטעם בצל), והחיפוש מוצא גם את השמות המקוריים של הרשתות", "סל ששמרת עובר אוטומטית לשמות החדשים"]],
@@ -291,12 +292,13 @@ const C = (() => {
  // sizes: {code: [size, cls]}; when both sizes are known the substitute's price is scaled to the original size
  // (500 g at 9.90 counts as 12.28 for 620 g), so a smaller pack never wins just by being smaller.
  // paid = the actual shelf price, scale = the factor applied.
- function pickSub(f, subs, q, clubOk, today, orig, sizes) {
+ // expand: a substitute may be a merged product ("g:מלפפון ליחידה"): code -> the codes to look for
+ function pickSub(f, subs, q, clubOk, today, orig, sizes, expand) {
   let top = null, pick = null;
   const zo = sizes && sizes[orig];
   for (const [code, score] of subs || []) {
    if (top !== null && score < top) break;
-   const r = bestIn(f, [code], q, clubOk, today);
+   const r = bestIn(f, expand ? expand(code) : [code], q, clubOk, today);
    if (!r) continue;
    top = score;
    const zs = sizes && sizes[code], k = zo && zs && zo[1] === zs[1] && zs[0] > 0 ? zo[0] / zs[0] : 1;
@@ -349,10 +351,15 @@ async function catalog() {
  if (!S.cat) {
   $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>';
   S.cat = await getJSON("data/catalog.json");
-  // products merged under a new name since the basket was saved: move them to the new name
-  const al = S.cat._alias || {}; let moved = false;
+  // products merged under a new name since the basket was saved: move them to the new name. That covers
+  // renamed groups and single products (a barcode) that have since joined a merged product
+  const al = S.cat._alias || {}; let moved = false, owner = null;
+  const groupOf = c => {
+   if (!owner) { owner = {}; for (const g in S.cat) if (g.startsWith("g:")) for (const m of S.cat[g][5]) owner[m] = g; }
+   return owner[c];
+  };
   for (const c of Object.keys(S.basket)) {
-   const nw = c.startsWith("g:") && al[c.slice(2)] ? "g:" + al[c.slice(2)] : null;
+   const nw = c.startsWith("g:") ? (al[c.slice(2)] ? "g:" + al[c.slice(2)] : null) : (!S.cat[c] ? groupOf(c) : null);
    if (nw && S.cat[nw]) { S.basket[nw] = (+S.basket[nw] || 0) + (+S.basket[c] || 1); delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
   }
   if (moved) { store("basket", S.basket); store("exact", [...S.exact]); }
@@ -378,7 +385,7 @@ const hasSubs = c => !!S.subs?.s?.[c]?.length;
 const bestOrSub = (sid, c, q) => {
  const r = best(sid, c, q); if (r || S.exact.has(c) || !hasSubs(c)) return r;
  const f = S.files[sid], st = stOf(sid);
- return f && st ? C.pickSub(f, S.subs.s[c], q, S.chainClubs.has(st.chain), TODAY, c, S.subs.z) : null;
+ return f && st ? C.pickSub(f, S.subs.s[c], q, S.chainClubs.has(st.chain), TODAY, c, S.subs.z, cands) : null;
 };
 const unitTxt = (price, code) => { const u = C.unitPrice(price, S.subs?.z?.[code]); return u ? `${ils(u.v)} ${u.per}` : ""; };
 const subLine = (c, r) => r && r.sub ? `<br><span class="tag sub">🔄 תחליף: ${esc(S.cat?.[r.sub]?.[0] || r.sub)}${unitTxt(r.regp, r.sub) ? " · " + unitTxt(r.regp, r.sub) : ""}</span>` +

@@ -189,7 +189,7 @@ FISH = {"סלמון", "דג", "אמנון", "מושט", "לברק", "דניס", 
 # processed products that merely contain a produce word stay as they are
 NOT_PRODUCE = re.compile(r"בטעם|ממרח|סלט|רוטב|מרק|אבקת|אבקה|מיובש|מיובשים|מטוגן|טבעות|חטיף|ציפס|צ'יפס|קרקר|שימורי|"
                          r"כבוש|כבושים|בחומץ|במלח|ממולא|תבלין|ריבה|ריבת|מיץ|נקטר|משקה|קפוא\s+מוקפץ|פירה|קציצ|"
-                         r"נקניק|פסטרמה|המבורגר|שווארמה|קבב|לחתול|לכלב|גור|מזון|פיצה|בורקס|מאפה|עוגה|עוגת|גלידה|יוגורט|"
+                         r"נקניק|פסטרמה|המבורגר|שווארמה|קבב|לחתול|לכלב|(?<![א-ת])גור(?![א-ת])|(?<![א-ת])מזון|פיצה|בורקס|מאפה|עוגה|עוגת|גלידה|יוגורט|"
                          r"חתוכות|חתוכים|קצוצות|קצוץ|קצוצים|מרוסקות|מרוסק|קרטונית|צמחוני|טבעוני|בגריל|דק\s*דק|מן הצומח|"
                          r"מקורמל|ר\.\s*טבעי|רסק|מחית|מעדן|חומ\b|\d+\s*-\s*\d+|ספרינג|פריגת|תרכיז|מוקפץ|ממרח|"
                          r"כתוש|גבישי|שבבים|מעושן|מעושנת|מבושל|אפוי|צלוי|ממותק|סוכר|מקולפות|פסאטה|בשמן|במים|בקופס|קופסת|צנצנת|פחית|מהצומח|צמחי|ביונד|(?i:mutti|beyond)")
@@ -200,7 +200,7 @@ PRODUCE_DESC = {"נתחי", "נתח", "פרוס", "פרוסות", "פרוסים"
                 "שטופים", "שטוף", "קמעונאי", "יחידה", "ליחידה", "במשקל", "משקל", "לקג", "קג", "ק", "גדול", "גדולה",
                 "בינוני", "בינונית", "קטן", "קטנה", "סוג", "א", "מועדף", "נבחר", "באריזה", "ע", "קלאסי", "בשר",
                 "בתפזורת", "תפזורת", "שק", "בשק", "רשת", "ברשת", "גלאט", "מבצע", "חלק", "חלקה", "לק", "ג", "קילו", "שקית", "עם", "נתחים"}
-PRODUCE_DESC_BY_HEAD = {"בצל": {"יבש", "לבן"}, "שום": {"יבש", "לבן"}, "סלמון": {"פילה", "אטלנטי", "נורבגי"},
+PRODUCE_DESC_BY_HEAD = {"תפוחי": {"לבן", "קטן", "גורמה"}, "בצל": {"יבש", "לבן"}, "שום": {"יבש", "לבן"}, "סלמון": {"פילה", "אטלנטי", "נורבגי"},
                         "טחון": {"פילה"}, "בקר": {"פילה"}}
 PRODUCE_SYN = {"סגול": "אדום", "עגבניות": "עגבניה", "מלפפונים": "מלפפון", "תפוזים": "תפוז", "לימונים": "לימון",
                "בננות": "בננה", "קישואים": "קישוא", "תותים": "תות", "אגסים": "אגס", "תמרים": "תמר", "רימונים": "רימון",
@@ -351,18 +351,19 @@ BRANDS = set("""
 צבר אנגל ברמן דורות פרימור פריגת נביעות נסטלה נסקפה גייקובס ג'ייקובס לנדוור קליק מיה ניוואה קולגייט דאב פנטן
 גונסון ג'ונסון האגיס הוגיס פמפרס טיטול סנו פיירי ונוס פרסיל אריאל מטרנה סימילאק מוטי ברילה ברילא גלעם סטארקיסט
 סטרקיסט כרמית לוטוס מילקה נוטלה הרשי קינדר פררו מקסוול קוקה פפסי ספרייט פאנטה שוופס ספרינג טבעול תלמה קנור
-דנונה מולר יופלה אקטיביה טירת זוגלובק תפוגן מאסטר מעדנות רמילוי
+דנונה מולר יופלה אקטיביה טירת זוגלובק תפוגן מאסטר מעדנות רמילוי מהגולן
 """.split())
 # a flavor word is part of the product's identity: plain ketchup is not barbecue ketchup, plain coffee is not vanilla
 FLAVOR_WORDS = set("""
 ברביקיו גריל שום צילי צ'ילי סרירצה סרירצ'ה פפריקה מעושן מעושנת חרדל דבש וניל מוקה קרמל שוקולד מריר לבן תות בננה
 לימון תפוז תפוח אפרסק מנגו ענבים אננס דובדבן פטל אוכמניות מנטה נענע קינמון אגוזים בוטנים לוז שקדים פיסטוק קוקוס
 בצל עגבניות זיתים פטריות כמהין גבינה שמנת עוף בקר טונה סלמון שישליצני פסטו בזיליקום אורגנו ים טבעי מלח מלוח אגוז
+שוקו ווניל אלוורה לבנדר מסטיק פירות
 """.split())
 PACK_WORDS = {"מארז", "שלישייה", "שלישיית", "רביעייה", "רביעיית", "זוג", "זוגות", "שישייה", "שישיית", "חמישייה", "מאגדת", "מגש"}
-STOP_WORDS = {"בקבוק", "לחיץ", "פחית", "שקית", "בשקית", "קופסה", "קופסא", "בקופסא", "בקופסה", "צנצנת", "בצנצנת", "בקרטון",
+STOP_WORDS = {"ועדת", "עד", "רבנות", "בדצ", "כשרות", "שומן", "טרי", "טרייה", "טריה", "פיקוח", "בפיקוח", "פריט", "בבקבוק", "בשקית", "בקבוק", "לחיץ", "פחית", "שקית", "בשקית", "קופסה", "קופסא", "בקופסא", "בקופסה", "צנצנת", "בצנצנת", "בקרטון",
               "קרטון", "חדש", "חדשה", "מבצע", "יחידה", "יחידות", "יח", "גרם", "גר", "מל", "ליטר", "קג", "כשר", "מהדרין", "בדץ",
-              "כשל", "כשלפ", "פרווה", "ארוז", "גדול", "גדולה", "קטן", "קטנה", "של", "את", "ג", "ל", "ק"}
+              "כשל", "כשלפ", "פרווה", "ארוז", "של", "את", "ג", "ל", "ק"}
 # what a "ללא / מופחת / דל" removes; only these words are swallowed, the rest of the name still counts
 LOW_TARGETS = {"סוכר", "מלח", "תוספת", "גלוטן", "לקטוז", "שומן", "נתרן", "קלוריות", "כולסטרול", "שמן", "חומרים",
                "משמרים", "סוכרים", "מתוק", "אלכוהול", "קפאין"}
@@ -391,15 +392,32 @@ _MULT = re.compile(r"(?<![\d.])(\d+)\s*[*xX×]\s*(\d+(?:\.\d+)?)")
 
 def _tokens(name):
     n = BIDI.sub("", name or "")
+    # "1למהדרין" / "2לבקבוק": the chain glued the litre sign to the next word
+    n = re.sub(r"(\d)\s*ל(?=(?:מהדרין|בקבוק|קרטון|רגיל|מועשר|טרי))", r"\1 ל ", n)
     n = _CARTON.sub(" ", n)
     n = re.sub(r"(\d)([א-ת])", r"\1 \2", n)
     n = re.sub(r"([א-ת])(\d)", r"\1 \2", n)
     return n
 
 
-def product_features(name):
-    """-> dict(head, core, pct, var, pack, size, cls) or None when the product cannot be matched safely."""
+_UNIT_HINT = [(r"ליטר", "ליטר"), (r"מיליליטר|מ\"ל|מל", "מ\"ל"), (r"קילו|ק\"ג|קג", "ק\"ג"), (r"גרם|גר", "גרם")]
+
+
+def product_features(name, unit_hint=None):
+    """-> dict(head, core, pct, var, pack, size, cls) or None when the product cannot be matched safely.
+    unit_hint: the chain's unit field. When the name was cut off after the number ("חלב תנובה 3% שומן 1"), a
+    trailing number plus a unit field that names a volume / weight gives the size."""
     raw = _tokens(name)
+    if unit_hint and not size_tag(raw):
+        u = next((lbl for pat, lbl in _UNIT_HINT if re.search(pat, unit_hint)), None)
+        full = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(ליטר|ק\"ג|קילוגרם|גרם|מ\"ל|מיליליטר)\s*", unit_hint)
+        m = re.search(r"(?<![\d.%])(\d+(?:\.\d+)?)\s*$", raw.strip())
+        if full and float(full.group(1)) != 100:
+            raw = f"{raw} {full.group(1)} {u}"     # the unit field states the pack: "1 ליטר"
+        elif m and u and "%" in raw:
+            # a name cut off after the number ("חלב תנובה 3% שומן 1"); only when the % is already written,
+            # else the trailing number may be the % itself ("חלב תנובה טרי שקית 3" = 3% milk, not 3 litres)
+            raw = f"{raw} {u}"
     pack = False
     m = _MULT.search(raw)
     if m and 2 <= int(m.group(1)) <= 8:
@@ -457,14 +475,15 @@ def similarity(a, b):
     return len(sa & sb) / len(sa | sb)
 
 
-def substitutes(products, top=6, size_tol=0.2, min_sim=0.66, unit_price=None, max_ratio=1.8):
+def substitutes(products, top=6, size_tol=0.2, min_sim=0.66, unit_price=None, max_ratio=1.8, units=None):
     """products: {code: name}; unit_price: optional {code: typical price per g/ml/unit}. Returns ({code: [[sub_code, score], ...]}, {code: [size, cls]}).
     A substitute has the same head word, the same % values (3% milk is not 1%), the same variant set
     (regular vs spicy / reduced sugar / organic / flavored), neither is a multipack, the same unit class and a
     size within size_tol, and a name similarity of at least min_sim. When unit prices are known, the price per
     g/ml may differ by at most max_ratio: the same name can hide two products ("חומוס" = dry chickpeas or hummus)."""
     unit_price = unit_price or {}
-    feats = {c: f for c, n in products.items() if (f := product_features(n)) and f["size"] and not f["pack"]}
+    units = units or {}
+    feats = {c: f for c, n in products.items() if (f := product_features(n, units.get(c))) and f["size"] and not f["pack"]}
     feats = {c: f for c, f in feats.items() if f["head"] not in AMBIGUOUS}
     groups = {}
     for c, f in feats.items():

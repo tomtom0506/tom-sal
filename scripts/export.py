@@ -55,7 +55,9 @@ def main():
 
  # 2) price sanity inside groups: a price far from the group median is almost always a unit error
  #    (per unit vs per kg, per 100g) - drop it rather than show a wrong cheapest store
- gp = {}
+ gp, prices_all = {}, {}
+ for c, p in db.execute("SELECT item_code, price FROM prices WHERE price > 0"):
+  prices_all.setdefault(c, []).append(p)
  for c, p in db.execute("SELECT item_code, price FROM prices"):
   if c in code2group and p:
    gp.setdefault(code2group[c], []).append(p * per_kg.get(c, 1))
@@ -109,12 +111,24 @@ def main():
  for c, p in db.execute("SELECT item_code, price FROM prices WHERE price > 0"):
   if c in named:
    prices_by.setdefault(c, []).append(p)
- unit = {}
+ unit, uhint = {}, {c: v[3] for c, v in cat.items() if not c.startswith(("g:", "_")) and len(v) > 3 and v[3]}
  for c, n in named.items():
-  f = product_features(n)
+  f = product_features(n, uhint.get(c))
   if f and f["size"] and c in prices_by:
    unit[c] = statistics.median(prices_by[c]) / f["size"]
- subs, sizes = substitutes(named, unit_price=unit)
+ subs, sizes = substitutes(named, unit_price=unit, units=uhint)
+ # fresh produce sold per kg in one store and per unit / pack in another ("מלפפון" / "מלפפון ליחידה"):
+ # each is the other's substitute when their typical prices are close (a 1 kg pack vs the price per kg)
+ gmed = {}
+ for g, v in groups.items():
+  ps = sorted(p * per_kg.get(c, 1) for c in v["c"] for p in prices_all.get(c, []))
+  if ps:
+   gmed[g] = ps[len(ps) // 2]
+ for g in groups:
+  u = g + " ליחידה"
+  if u in groups and g in gmed and u in gmed and max(gmed[g], gmed[u]) <= 2 * min(gmed[g], gmed[u]):
+   subs.setdefault("g:" + g, []).append(["g:" + u, 0.9])
+   subs.setdefault("g:" + u, []).append(["g:" + g, 0.9])
  dump(DATA / "subs.json", {"s": subs, "z": {c: [round(v, 3), k] for c, (v, k) in sizes.items()}})
  print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups,", dropped, "outlier prices dropped,",
        len(subs), "products with substitutes")
