@@ -184,8 +184,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.8.2";
+const VERSION = "1.8.3";
 const CHANGELOG = [
+ ["1.8.3", "23.11.2026", ["תיקון: מוצר שעבר לשם חדש (למשל \"תפוח אדמה לאפיה\" שהפך ל\"תפוחי אדמה\") הופיע בסל עם כמות NaN ולא היה אפשר למחוק אותו. עכשיו הוא עובר לשם החדש בלי כפילות, וכמות לא תקינה שנשמרה בטלפון מתנקה אוטומטית"]],
  ["1.8.2", "23.11.2026", ["מוצר שחסר בסניף לא נספר יותר כ-0: בסכום הכולל, בטבלה ובגרף הוא נספר לפי המחיר הממוצע שלו בשאר הסניפים שבחרת, ומסומן ב-~. כך סניף שחסרים בו מוצרים לא נראה זול יותר בטעות", "תפוחי אדמה: גם \"תפוח אדמה\" (ביחיד, כמו באושר עד) מזוהה, ולכן מופיע תפוח האדמה הרגיל ולא רק זן מיוחד ויקר", "בשר טחון: אריזה ששמה נקטע בקובץ הרשת (\"1.2 ק\"\") נספרת לפי ק\"ג. באושר עד, למשל, מוצג ₪37.42 לק\"ג במקום ₪89.80", "דג קפוא ששמו נקטע (\"קפ\") לא נספר יותר כדג טרי", "טווח המחירים הסביר בתוך מוצר מאוחד הורחב, כדי שבשר טחון זול לא יוצא מההשוואה"]],
  ["1.8.1", "23.11.2026", ["דגים, בשר, ירקות ופירות טריים מאוחדים בין הרשתות: למשל \"סלמון\" אחד במקום עשרות שמות שונים, וכך הוא נמצא ברוב הסופרים במקום ב-2-3 בלבד. שם הספק או המשחטה (עטרה, מחפוד, עוף הכפר...) לא מפצל יותר את המוצר", "בשר טחון, עוף, בצל וחסה נמצאים ברוב הסופרים: כל רשת קוראת להם אחרת, ועכשיו הם מזוהים כאותו מוצר", "אריזה במשקל קבוע של מוצר טרי (למשל בשר טחון 500 גרם) מושווית לפי מחיר לק\"ג מול מה שנמכר בדלפק", "חיפוש: המוצר עצמו מופיע לפני מוצרים שרק מכילים את המילה (בצל לפני חטיף בטעם בצל), והחיפוש מוצא גם את השמות המקוריים של הרשתות", "סל ששמרת עובר אוטומטית לשמות החדשים"]],
  ["1.8.0", "22.11.2026", ["תחליף דומה: כשמוצר שבחרת לא נמכר בסניף, נבחר המוצר הכי קרוב באותו סניף, למשל קטשופ אסם 750 גרם במקום קטשופ היינץ 700 גרם, ומסומן ב-🔄", "תחליף הוא תמיד אותו סוג מוצר ובגודל דומה (עד 20% הבדל). לא מחליפים טעם, גרסה (חריף, מופחת סוכר, אורגני) או מארז", "ליד כל תחליף מוצג המחיר ל-100 גרם או ל-100 מ\"ל, כדי שההבדל בגודל יהיה שקוף", "לכל מוצר בסל אפשר לבחור \"רק המוצר הזה\" כדי לא לקבל תחליף", "סניף שיש בו את כל הסל רק בעזרת תחליפים מדורג אחרי סניף שיש בו את כל המוצרים המקוריים"]],
@@ -337,9 +338,12 @@ const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; 
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const TODAY = new Date().toLocaleDateString("sv-SE");
 
-const S = { stores: [], updated: "", sel: new Set(load("sel", [])), basket: load("basket", {}), chainClubs: new Set(load("chainClubs", [])), memb: load("memb", []),
+// quantities must be positive numbers: a NaN saved by an older version made an item impossible to remove
+function cleanBasket(b) { const o = {}; for (const [c, q] of Object.entries(b || {})) if (Number.isFinite(+q) && +q > 0) o[c] = +q; return o; }
+const S = { stores: [], updated: "", sel: new Set(load("sel", [])), basket: cleanBasket(load("basket", {})), chainClubs: new Set(load("chainClubs", [])), memb: load("memb", []),
  cat: null, subs: null, exact: new Set(load("exact", [])), files: {}, bad: new Set(), view: load("view", "chart"), sq: "", bkOpen: load("bkOpen", true) };
 
+store("basket", S.basket);  // persist the cleaned basket right away
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
 async function catalog() {
  if (!S.cat) {
@@ -349,7 +353,7 @@ async function catalog() {
   const al = S.cat._alias || {}; let moved = false;
   for (const c of Object.keys(S.basket)) {
    const nw = c.startsWith("g:") && al[c.slice(2)] ? "g:" + al[c.slice(2)] : null;
-   if (nw && S.cat[nw]) { S.basket[nw] = (S.basket[nw] || 0) + S.basket[c]; delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
+   if (nw && S.cat[nw]) { S.basket[nw] = (+S.basket[nw] || 0) + (+S.basket[c] || 1); delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
   }
   if (moved) { store("basket", S.basket); store("exact", [...S.exact]); }
   if ($("q").value.trim().length < 2) $("res").innerHTML = "";
@@ -451,7 +455,7 @@ async function search() {
    <button class="add" data-add="${esc(c)}" aria-label="הוסף לסל">+</button></div>`;
  }).join("") + "</div>" : '<div class="empty">לא נמצא מוצר</div>';
 }
-function addToBasket(c) { S.basket[c] = S.basket[c] ? +(S.basket[c] + C.kgStep(kg(c))).toFixed(2) : 1; store("basket", S.basket); }
+function addToBasket(c) { S.basket[c] = +S.basket[c] > 0 ? +(+S.basket[c] + C.kgStep(kg(c))).toFixed(2) : 1; store("basket", S.basket); }
 $("res").addEventListener("click", e => {
  const v = e.target.closest("[data-view]"); if (v) { showProduct(v.dataset.view); return; }
  const c = e.target.dataset.add; if (!c) return;
@@ -470,9 +474,10 @@ async function renderBasket() {
  await renderBasket2();
 }
 async function renderBasket2() {
- const codes = Object.keys(S.basket);
- if (!codes.length) return;
+ if (!Object.keys(S.basket).length) return;
  const cat = await catalog(); await files();
+ const codes = Object.keys(S.basket);  // after catalog(): it may have moved items to a new name
+ if (!codes.length) { renderBasket(); return; }
  $("bask").innerHTML = `<details class="bk" ${S.bkOpen ? "open" : ""}><summary>🛒 בסל · ${codes.length} מוצרים <button class="lnk" id="clrbask">ריקון הסל</button></summary><div class='box'>` + codes.map(c => `<div class="row">
   <div class="grow" data-view="${esc(c)}"><div class="name">${esc(nmRaw(c))} <span class="peek">› מחירים</span></div><div class="sub">${cat[c] ? esc(cat[c][1] || "") : '<span class="miss">לא נמצא בנתונים של היום</span>'}</div>
   ${hasSubs(c) ? `<button class="chip subt ${S.exact.has(c) ? "off" : ""}" data-exact="${esc(c)}" aria-pressed="${!S.exact.has(c)}">${S.exact.has(c) ? "🔒 רק המוצר הזה" : "🔄 מותר תחליף דומה"}</button>` : ""}</div>
@@ -486,7 +491,8 @@ $("bask").addEventListener("click", e => {
  if (e.target.id === "clrbask") { e.preventDefault(); if (confirm("לרוקן את כל הסל?")) { S.basket = {}; store("basket", S.basket); renderBasket(); } return; }
  const v = e.target.closest("[data-view]"); if (v) { showProduct(v.dataset.view); return; }
  const c = e.target.dataset.d; if (!c) return;
- S.basket[c] = +(S.basket[c] + e.target.dataset.v * C.kgStep(kg(c))).toFixed(2); if (S.basket[c] <= 0) delete S.basket[c];
+ const nv = +((+S.basket[c] || 0) + e.target.dataset.v * C.kgStep(kg(c))).toFixed(2);
+ if (nv > 0) S.basket[c] = nv; else delete S.basket[c];
  store("basket", S.basket); renderBasket();
 });
 
