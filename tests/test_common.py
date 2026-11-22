@@ -102,6 +102,57 @@ class Grouping(unittest.TestCase):
         self.assertEqual(c.norm_name("‫דג פילה סלמון קפוא"), "דג פילה סלמון קפוא")
 
 
+class Substitutes(unittest.TestCase):
+    """Tomer's rule: same product in principle, similar size; ketchup for ketchup, never tomato paste."""
+    P = {"heinz": "קטשופ היינץ 700 גרם", "osem": "אסם קטשופ בקבוק לחיץ 9*750גרם-חדש", "big": "קטשופ 1 ק\"ג",
+         "paste": "רסק עגבניות 700 גרם", "spicy": "אסם קטשופ חריף 750 גרם", "bbq": "קטשופ ברביקיו 700 גרם",
+         "low": "קטשופ היינץ ללא תוספת סוכר ומלח 700 גרם", "chips": "חטיף צ'יפס בטעם קטשופ 50 גרם",
+         "pack": "מארז קטשופ אסם 750 גרם", "m3": "תנובה חלב 3% 1 ליטר", "m3b": "טרה חלב קרטון 3% 1ל", "m1": "חלב 1% 1 ליטר",
+         "sh": "אלביב שמפו קולגן 500 מ\"ל", "co": "אלביב מרכך קולגן 500 מ\"ל", "d4": "האגיס אקסטרה קר מידה 4 32 יח'",
+         "d5": "האגיס אקסטרה קר מידה 5 30 יח'", "hum1": "חומוס 500 גרם", "hum2": "חומוס צבר 500 גרם",
+         "z1": "שוופס למון ליים 1.5 ליטר", "z2": "שוופס למון ליים ZERO 1.5 ליטר",
+         "y1": "יוגורט עם קציפת תות 150 גרם", "y2": "יוגורט עם קציפת לימון 150 גרם",
+         "gf1": "עוגיות ללא גלוטן שוקו 150 גרם", "gf2": "עוגיות ללא גלוטן לימון 150 גרם"}
+
+    def subs(self):
+        return c.substitutes(self.P)[0]
+
+    def test_ketchup_brand_swap_similar_size(self):
+        s = self.subs()
+        self.assertIn("osem", [d for d, _ in s["heinz"]])
+        self.assertNotIn("big", [d for d, _ in s["heinz"]])   # 1 kg is more than 20% from 700 g
+
+    def test_never_a_different_product_or_variant(self):
+        got = {d for v in self.subs().get("heinz", []) for d in v[:1]}
+        for bad in ("paste", "spicy", "bbq", "low", "chips", "pack"):
+            self.assertNotIn(bad, got, bad)
+
+    def test_milk_percent_must_match(self):
+        s = self.subs()
+        self.assertEqual([d for d, _ in s["m3"]], ["m3b"])
+
+    def test_type_words_and_identity_numbers(self):
+        s = self.subs()
+        self.assertNotIn("sh", s)       # shampoo is not conditioner
+        self.assertNotIn("d4", s)       # diaper size 4 is not size 5
+
+    def test_ambiguous_names_and_flavors(self):
+        s = self.subs()
+        for k in ("hum1", "hum2", "z1", "z2", "y1", "y2", "gf1", "gf2"):
+            self.assertNotIn(k, s, k)
+
+    def test_brand_plus_flavor_only_has_no_kind(self):
+        # bug found in the UI test: Fanta grape (soda) was offered for Nevi'ot+ grape (flavored water)
+        P = {"fanta": "פאנטה ענבים 1.5 ליטר", "neviot": "נביעות + ענבים 1.5 ליטר"}
+        self.assertEqual(c.substitutes(P)[0], {})
+
+    def test_unit_price_guard(self):
+        P = {"a": "קפה נמס 200 גרם", "b": "קפה נמס 200 גרם מיוחד"}
+        P2 = {"a": "קפה נמס 200 גרם", "b": "קפה נמס 190 גרם"}
+        self.assertIn("a", c.substitutes(P2)[0])
+        self.assertNotIn("a", c.substitutes(P2, unit_price={"a": 0.1, "b": 0.3})[0])
+
+
 class Fallback(unittest.TestCase):
     """bug: a store whose price download failed vanished; fallback only covered whole-chain failures.
     Now merge() falls back per store to the previous night, keeping its real date (max 3 days)."""
