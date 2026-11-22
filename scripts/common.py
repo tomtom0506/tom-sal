@@ -188,3 +188,158 @@ def group_products(rows):
             g += " ליחידה"
         out[code] = g
     return out
+
+
+# ---- substitutes: "the same product in principle, similar size" (export -> site/data/subs.json) ----
+# Precision over recall: when in doubt there is no substitute. An unknown brand stays in the name, so the
+# head word does not match and no substitute is offered rather than a wrong one.
+# single, unambiguous brand words only (never a word that also names a product type: פרי, עוף, פסטה, נקטר...)
+BRANDS = set("""
+אסם היינץ היינז עלית תנובה שטראוס יטבתה טרה סוגת ויסוצקי יכין זוגלובק שופרסל יוחננוף ויקטורי קרפור ברקת אחלה
+צבר אנגל ברמן דורות פרימור פריגת נביעות נסטלה נסקפה גייקובס ג'ייקובס לנדוור קליק מיה ניוואה קולגייט דאב פנטן
+גונסון ג'ונסון האגיס הוגיס פמפרס טיטול סנו פיירי ונוס פרסיל אריאל מטרנה סימילאק מוטי ברילה ברילא גלעם סטארקיסט
+סטרקיסט כרמית לוטוס מילקה נוטלה הרשי קינדר פררו מקסוול קוקה פפסי ספרייט פאנטה שוופס ספרינג טבעול תלמה קנור
+דנונה מולר יופלה אקטיביה טירת זוגלובק תפוגן מאסטר מעדנות רמילוי
+""".split())
+# a flavor word is part of the product's identity: plain ketchup is not barbecue ketchup, plain coffee is not vanilla
+FLAVOR_WORDS = set("""
+ברביקיו גריל שום צילי צ'ילי סרירצה סרירצ'ה פפריקה מעושן מעושנת חרדל דבש וניל מוקה קרמל שוקולד מריר לבן תות בננה
+לימון תפוז תפוח אפרסק מנגו ענבים אננס דובדבן פטל אוכמניות מנטה נענע קינמון אגוזים בוטנים לוז שקדים פיסטוק קוקוס
+בצל עגבניות זיתים פטריות כמהין גבינה שמנת עוף בקר טונה סלמון שישליצני פסטו בזיליקום אורגנו ים טבעי מלח מלוח אגוז
+""".split())
+PACK_WORDS = {"מארז", "שלישייה", "שלישיית", "רביעייה", "רביעיית", "זוג", "זוגות", "שישייה", "שישיית", "חמישייה", "מאגדת", "מגש"}
+STOP_WORDS = {"בקבוק", "לחיץ", "פחית", "שקית", "בשקית", "קופסה", "קופסא", "בקופסא", "בקופסה", "צנצנת", "בצנצנת", "בקרטון",
+              "קרטון", "חדש", "חדשה", "מבצע", "יחידה", "יחידות", "יח", "גרם", "גר", "מל", "ליטר", "קג", "כשר", "מהדרין", "בדץ",
+              "כשל", "כשלפ", "פרווה", "ארוז", "גדול", "גדולה", "קטן", "קטנה", "של", "את", "ג", "ל", "ק"}
+# what a "ללא / מופחת / דל" removes; only these words are swallowed, the rest of the name still counts
+LOW_TARGETS = {"סוכר", "מלח", "תוספת", "גלוטן", "לקטוז", "שומן", "נתרן", "קלוריות", "כולסטרול", "שמן", "חומרים",
+               "משמרים", "סוכרים", "מתוק", "אלכוהול", "קפאין"}
+LOW = {"מופחת", "מופחתת", "פחות", "דל", "דלת", "ללא", "ללת", "לייט", "דיאט", "זירו", "קל"}
+VARIANT = {"חריף": "spicy", "חריפה": "spicy", "פיקנטי": "spicy", "אורגני": "organic", "אורגנית": "organic",
+           "טבעוני": "vegan", "טבעונית": "vegan", "ללג": "gluten", "גלוטן": "gluten",
+           "קפוא": "frozen", "קפואה": "frozen", "קפואים": "frozen", "קפואות": "frozen",
+           "סמול": "size:s", "מדיום": "size:m", "לארג": "size:l", "לארג'": "size:l", "אקסטרה": "x"}
+# numbers that define the product, not its pack size: diaper size 4 is not size 5, pasta no. 8 is not no. 3
+_IDENT = re.compile(r"(?<![א-ת])(מידה|מס|מספר|שלב|גוון)\s*['׳.]?\s*\+?\s*(\d+)")
+# words that name what the product IS: if one name has one of these and the other does not, they differ
+# (shampoo vs conditioner from the same line share almost every other word)
+TYPE_WORDS = set("""
+שמפו מרכך סבון ג'ל גל קרם תחליב תרסיס ספריי מסכה סרום אבקת אבקה נוזל טבליות קפסולות כמוסות משחת דאודורנט מי
+מגבונים ממרח רוטב משקה מיץ נקטר תרכיז סירופ חטיף חטיפי עוגיות עוגה עוגת מרק תערובת קמח פתיתים אטריות
+מכנסונים פנטס סטיק רול מברשת
+""".split())
+# one name, two products (dry chickpeas / hummus salad, raw tahini / tahini salad, canned / dry): never substitute
+AMBIGUOUS = {"חומוס", "טחינה", "תירס", "שעועית", "אפונה", "חציל", "פלפל", "עדשים"}
+FLAVOR = {"בטעם", "בסגנון", "עם", "במילוי", "בניחוח", "ניחוח"}
+# grams and millilitres are kept apart: laundry gel (litres) is not powder (kilograms)
+_UNIT_MUL = {"ק\"ג": ("g", 1000), "גרם": ("g", 1), "מ\"ל": ("ml", 1), "ליטר": ("ml", 1000), "יח׳": ("u", 1)}
+_CARTON = re.compile(r"\(\s*\d+\s*\)")           # "(12)" = carton count printed in the name
+_MULT = re.compile(r"(?<![\d.])(\d+)\s*[*xX×]\s*(\d+(?:\.\d+)?)")
+
+
+def _tokens(name):
+    n = BIDI.sub("", name or "")
+    n = _CARTON.sub(" ", n)
+    n = re.sub(r"(\d)([א-ת])", r"\1 \2", n)
+    n = re.sub(r"([א-ת])(\d)", r"\1 \2", n)
+    return n
+
+
+def product_features(name):
+    """-> dict(head, core, pct, var, pack, size, cls) or None when the product cannot be matched safely."""
+    raw = _tokens(name)
+    pack = False
+    m = _MULT.search(raw)
+    if m and 2 <= int(m.group(1)) <= 8:
+        pack = True                       # "2*140 גר", "6*24 ג" = a multipack; "9*750" = carton count, ignored
+    tag = size_tag(raw.replace("*", " "))
+    size = cls = None
+    if tag:
+        num, unit = tag.split(" ", 1)
+        cls, mul = _UNIT_MUL[unit]
+        size = float(num) * mul
+    ident = [f"{a}{b}" for a, b in _IDENT.findall(raw)]
+    # a bare number that is not the pack size, a %, or "N*M" is a model / shape number ("פסטה רגיה 19")
+    rest = _IDENT.sub(" ", SIZE_RE.sub(" ", _MULT.sub(" ", raw)))
+    rest = re.sub(r"\d+(?:\.\d+)?\s*%", " ", rest)
+    ident += [f"n{int(x)}" for x in re.findall(r"(?<![\d.])(\d{1,4})(?![\d.])", rest)]
+    pct = tuple(sorted(re.findall(r"(\d+(?:\.\d+)?)\s*%", raw)) + sorted(ident))
+    words = re.sub(r"[\"'׳״()\[\].,*/\\\-+:!%]", " ", raw).split()
+    core, var, mode = [], set(), None
+    for w in words:
+        if not re.fullmatch(r"[א-ת]{2,}", w):
+            continue                      # numbers, units, latin brand names
+        if w in PACK_WORDS:
+            pack = True; continue
+        if w in LOW:
+            var.add("low"); mode = "low"; continue
+        if w in VARIANT:
+            var.add(VARIANT[w]); continue
+        if w in FLAVOR:
+            mode = "flavor"; continue
+        if mode == "low":                 # "ללא תוספת סוכר ומלח": the removed things describe the variant
+            b = w[1:] if w.startswith("ו") and w[1:] in LOW_TARGETS else w
+            if b in LOW_TARGETS:
+                var.add("low:" + b); continue
+            mode = None
+        if mode == "flavor":              # every word after "עם / בטעם / במילוי": "עם קציפת תות" != "עם קציפת לימון"
+            if w not in STOP_WORDS and w not in BRANDS:
+                var.add("flavor:" + w)
+            continue
+        if w in STOP_WORDS or w in BRANDS:
+            continue
+        if core and w in FLAVOR_WORDS:   # not the head word: "שום כתוש" is garlic, "קטשופ שום" is a flavor
+            var.add("flavor:" + w); continue
+        core.append(w)
+    if re.search(r"(?i)\b(zero|light|lite|diet)\b", raw):
+        var.add("low")
+    if not core:
+        return None
+    if len(core) == 1 and core[0] in FLAVOR_WORDS:
+        return None                       # "פאנטה ענבים" / "נביעות + ענבים": only a flavor is left, the kind is unknown
+    return {"head": core[0], "core": core, "pct": pct, "var": tuple(sorted(var)), "pack": pack, "size": size, "cls": cls}
+
+
+def similarity(a, b):
+    sa, sb = set(a["core"]), set(b["core"])
+    return len(sa & sb) / len(sa | sb)
+
+
+def substitutes(products, top=6, size_tol=0.2, min_sim=0.66, unit_price=None, max_ratio=1.8):
+    """products: {code: name}; unit_price: optional {code: typical price per g/ml/unit}. Returns ({code: [[sub_code, score], ...]}, {code: [size, cls]}).
+    A substitute has the same head word, the same % values (3% milk is not 1%), the same variant set
+    (regular vs spicy / reduced sugar / organic / flavored), neither is a multipack, the same unit class and a
+    size within size_tol, and a name similarity of at least min_sim. When unit prices are known, the price per
+    g/ml may differ by at most max_ratio: the same name can hide two products ("חומוס" = dry chickpeas or hummus)."""
+    unit_price = unit_price or {}
+    feats = {c: f for c, n in products.items() if (f := product_features(n)) and f["size"] and not f["pack"]}
+    feats = {c: f for c, f in feats.items() if f["head"] not in AMBIGUOUS}
+    groups = {}
+    for c, f in feats.items():
+        groups.setdefault((f["head"], f["pct"], f["var"], f["cls"]), []).append(c)
+    out = {}
+    for codes in groups.values():
+        if len(codes) < 2:
+            continue
+        for c in codes:
+            a, cand = feats[c], []
+            for d in codes:
+                if d == c:
+                    continue
+                b = feats[d]
+                if abs(a["size"] - b["size"]) > size_tol * a["size"]:
+                    continue
+                pa, pb = unit_price.get(c), unit_price.get(d)
+                if pa and pb and max(pa, pb) > max_ratio * min(pa, pb):
+                    continue
+                if set(a["core"]) & TYPE_WORDS != set(b["core"]) & TYPE_WORDS:
+                    continue
+                s = similarity(a, b)
+                if s >= min_sim:
+                    cand.append((s, -abs(a["size"] - b["size"]), d))
+            if cand:
+                cand.sort(reverse=True)
+                out[c] = [[d, round(s, 2)] for s, _, d in cand[:top]]
+    used = set(out) | {d for v in out.values() for d, _ in v}
+    sizes = {c: [feats[c]["size"], feats[c]["cls"]] for c in used}
+    return out, sizes

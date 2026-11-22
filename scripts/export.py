@@ -3,7 +3,9 @@ import json, sqlite3, sys
 from pathlib import Path
 import israeli_prices as ilp
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import (today_il, group_products, is_coupon, promo_active, norm_date, norm_rate, norm_club, norm_qty)
+import statistics
+from common import (today_il, group_products, is_coupon, promo_active, norm_date, norm_rate, norm_club, norm_qty,
+                    product_features, substitutes)
 
 DATA = Path("site/data"); (DATA / "s").mkdir(parents=True, exist_ok=True)
 
@@ -86,7 +88,23 @@ def main():
  data_date = meta.get("data_date") or max((d for d in dates if d), default=today)
  dump(DATA / "stores.json", {"updated": data_date, "run_at": meta.get("run_at"), "exported": today, "stores": stores})
  dump(DATA / "catalog.json", cat)
- print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups,", dropped, "outlier prices dropped")
+
+ # 4) substitutes: for a product a store does not sell, the closest same-kind product of similar size
+ #    (loaded by the site only when needed). Unit prices guard against one name hiding two products.
+ named = {c: v[0] for c, v in cat.items() if not c.startswith("g:") and v[0]}
+ prices_by = {}
+ for c, p in db.execute("SELECT item_code, price FROM prices WHERE price > 0"):
+  if c in named:
+   prices_by.setdefault(c, []).append(p)
+ unit = {}
+ for c, n in named.items():
+  f = product_features(n)
+  if f and f["size"] and c in prices_by:
+   unit[c] = statistics.median(prices_by[c]) / f["size"]
+ subs, sizes = substitutes(named, unit_price=unit)
+ dump(DATA / "subs.json", {"s": subs, "z": {c: [round(v, 3), k] for c, (v, k) in sizes.items()}})
+ print(len(stores), "stores,", len(cat), "catalog entries,", len(groups), "groups,", dropped, "outlier prices dropped,",
+       len(subs), "products with substitutes")
 
 
 if __name__ == "__main__":

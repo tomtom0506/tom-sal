@@ -55,6 +55,11 @@ h2 .lnk{margin-inline-start:auto}
 .badge{display:inline-block;background:var(--gold);color:#1a1a1a;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:700;margin-inline-start:6px}
 .tag{display:inline-block;font-size:12px;border-radius:6px;padding:0 6px;background:#E7F5EE;color:var(--green);margin-top:2px}
 .tag.club{background:#FFF3D6;color:#8A5A00}
+.tag.sub{background:#EAF0FB;color:#1F3A6E}
+:root[data-theme="dark"] .tag.sub{background:#22345C;color:#C9D7F2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag.sub{background:#22345C;color:#C9D7F2}}
+.chip.subt{margin-top:4px;padding:2px 10px;font-size:12px}
+.chip.subt.off{background:var(--grid);color:var(--muted)}
 .miss{color:var(--red);font-size:13px}
 details summary{color:var(--muted);font-size:13px;margin-top:6px;cursor:pointer}
 .line{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:4px 0;border-top:1px dashed var(--line)}
@@ -179,8 +184,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.7.1";
+const VERSION = "1.8.0";
 const CHANGELOG = [
+ ["1.8.0", "22.11.2026", ["תחליף דומה: כשמוצר שבחרת לא נמכר בסניף, נבחר המוצר הכי קרוב באותו סניף, למשל קטשופ אסם 750 גרם במקום קטשופ היינץ 700 גרם, ומסומן ב-🔄", "תחליף הוא תמיד אותו סוג מוצר ובגודל דומה (עד 20% הבדל). לא מחליפים טעם, גרסה (חריף, מופחת סוכר, אורגני) או מארז", "ליד כל תחליף מוצג המחיר ל-100 גרם או ל-100 מ\"ל, כדי שההבדל בגודל יהיה שקוף", "לכל מוצר בסל אפשר לבחור \"רק המוצר הזה\" כדי לא לקבל תחליף", "סניף שיש בו את כל הסל רק בעזרת תחליפים מדורג אחרי סניף שיש בו את כל המוצרים המקוריים"]],
  ["1.7.1", "21.11.2026", ["תיקון: בכל סניף חסרו כ-1% מהמוצרים (למשל כ-350 ביוחננוף אור יהודה גדול) בגלל דפדוף לא יציב בהורדה מ-over.org.il. עכשיו כל המוצרים נטענים, ויש בדיקה לילית שמספרם תואם לקובץ של הסניף"]],
  ["1.7.0", "21.11.2026", ["רשתות חדשות באזור: קרפור, סופר־פארם וויקטורי", "מקור נתונים חדש: over.org.il, שמרכז את קובצי השקיפות של כל הרשתות. אתרי הרשתות עצמם משמשים לגיבוי ולבדיקה לילית שהמחירים זהים", "מבצעים מדויקים יותר: לכל מוצר במבצע נשמר מחיר המבצע שלו, וקופונים ומבצעים שמותנים בסכום קנייה מסוננים לפי הסימון של הרשת"]],
  ["1.6.1", "20.11.2026", ["העדכון הלילי הוקדם לשעה לא עגולה (02:37 בחורף, 03:37 בקיץ), כי GitHub נוהג לדחות ריצות שנקבעו על שעה עגולה. בימים האחרונים העדכון הגיע רק בסביבות 10:00 בבוקר", "המדריך מסביר מתי הנתונים מתעדכנים ואיך לדעת שהם עדכניים"]],
@@ -277,7 +283,33 @@ const C = (() => {
  }
  const kgStep = isKg => isKg ? 0.5 : 1;
  const fmtQty = (q, isKg) => isKg ? (Number.isInteger(q) ? q : q.toFixed(1)) + ' ק"ג' : String(q);
- return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty };
+ // The closest substitute this store sells. subs: [[code, score], ...] best first (from subs.json). Among the
+ // candidates with the best score that the store has, the cheapest wins.
+ // sizes: {code: [size, cls]}; when both sizes are known the substitute's price is scaled to the original size
+ // (500 g at 9.90 counts as 12.28 for 620 g), so a smaller pack never wins just by being smaller.
+ // paid = the actual shelf price, scale = the factor applied.
+ function pickSub(f, subs, q, clubOk, today, orig, sizes) {
+  let top = null, pick = null;
+  const zo = sizes && sizes[orig];
+  for (const [code, score] of subs || []) {
+   if (top !== null && score < top) break;
+   const r = bestIn(f, [code], q, clubOk, today);
+   if (!r) continue;
+   top = score;
+   const zs = sizes && sizes[code], k = zo && zs && zo[1] === zs[1] && zs[0] > 0 ? zo[0] / zs[0] : 1;
+   const adj = { ...r, v: r.v * k, unit: r.unit * k, reg: r.reg * k, paid: r.v, scale: k, sub: code, score };
+   if (!pick || adj.v < pick.v) pick = adj;
+  }
+  return pick;
+ }
+ // "₪2.13 ל-100 גרם" from a pack price and its size ([value, "g"|"ml"|"u"])
+ function unitPrice(price, z) {
+  if (!z || !(z[0] > 0) || !(price > 0)) return null;
+  const [size, cls] = z;
+  if (cls === "u") return { v: price / size, per: "ליחידה" };
+  return { v: price / size * 100, per: cls === "g" ? "ל-100 גרם" : "ל-100 מ\"ל" };
+ }
+ return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice };
 })();
 // ==calc-end==
 
@@ -291,12 +323,14 @@ const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 const TODAY = new Date().toLocaleDateString("sv-SE");
 
 const S = { stores: [], updated: "", sel: new Set(load("sel", [])), basket: load("basket", {}), chainClubs: new Set(load("chainClubs", [])), memb: load("memb", []),
- cat: null, files: {}, bad: new Set(), view: load("view", "chart"), sq: "", bkOpen: load("bkOpen", true) };
+ cat: null, subs: null, exact: new Set(load("exact", [])), files: {}, bad: new Set(), view: load("view", "chart"), sq: "", bkOpen: load("bkOpen", true) };
 
 async function getJSON(u) { const r = await fetch(u, { cache: "no-cache" }); if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }
 async function catalog() { if (!S.cat) { $("res").innerHTML = '<div class="empty">טוען קטלוג…</div>'; S.cat = await getJSON("data/catalog.json"); if ($("q").value.trim().length < 2) $("res").innerHTML = ""; } return S.cat; }
 const known = sid => S.stores.some(s => s.sid === sid);
 // one failing store file must not blank the whole basket: load what we can, remember what failed
+// substitutes are only needed for the comparison: load once, never block the basket on them
+async function subsData() { if (!S.subs) { try { S.subs = await getJSON("data/subs.json"); } catch { S.subs = { s: {}, z: {} }; } } return S.subs; }
 async function files() {
  const want = [...S.sel].filter(s => known(s) && !S.files[s]);
  const res = await Promise.allSettled(want.map(async s => { S.files[s] = await getJSON(`data/s/${encodeURIComponent(s)}.json`); }));
@@ -306,6 +340,16 @@ const stOf = sid => S.stores.find(s => s.sid === sid);
 const cands = c => c.startsWith("g:") ? (S.cat?.[c]?.[5] || []) : [c];
 const kg = c => !!(c.startsWith("g:") && S.cat?.[c]?.[4]);
 const best = (sid, c, q) => { const f = S.files[sid], st = stOf(sid); return f && st ? C.bestIn(f, cands(c), q, S.chainClubs.has(st.chain), TODAY) : null; };
+const hasSubs = c => !!S.subs?.s?.[c]?.length;
+// the product itself, or (unless the user locked it to "exact only") its closest substitute in this store
+const bestOrSub = (sid, c, q) => {
+ const r = best(sid, c, q); if (r || S.exact.has(c) || !hasSubs(c)) return r;
+ const f = S.files[sid], st = stOf(sid);
+ return f && st ? C.pickSub(f, S.subs.s[c], q, S.chainClubs.has(st.chain), TODAY, c, S.subs.z) : null;
+};
+const unitTxt = (price, code) => { const u = C.unitPrice(price, S.subs?.z?.[code]); return u ? `${ils(u.v)} ${u.per}` : ""; };
+const subLine = (c, r) => r && r.sub ? `<br><span class="tag sub">🔄 תחליף: ${esc(S.cat?.[r.sub]?.[0] || r.sub)}${unitTxt(r.regp, r.sub) ? " · " + unitTxt(r.regp, r.sub) : ""}</span>` +
+ `<span class="sub"> במקום ${esc(nmRaw(c))}${r.scale && Math.abs(r.scale - 1) > 0.005 ? ` · המחיר מותאם לגודל המקורי (בפועל ${ils(r.paid)})` : ""}</span>` : "";
 const staleTag = st => st && st.date && st.date < S.updated ? ` <span class="stale">· נתוני ${dmy(st.date)}</span>` : "";
 const shortName = st => esc(st.he) + "<small>" + esc(st.name) + "</small>";
 
@@ -384,16 +428,26 @@ $("res").addEventListener("click", e => {
 const nmRaw = c => S.cat?.[c]?.[0] || c.replace(/^g:/, "");
 async function renderBasket() {
  const codes = Object.keys(S.basket);
+ // first time only: substitutes arrive after the basket is shown, then the comparison is redrawn once with them
+ if (codes.length && !S.subs) subsData().then(() => { if (Object.keys(S.basket).length) renderBasket2(); });
  if (!codes.length) { $("bask").innerHTML = `<div class="hero"><div class="big">🛒</div><div class="name">הסל ריק</div><div class="sub">חפש מוצר למעלה או סרוק ברקוד 📷, ונראה לך איפה הכי זול.</div>
   <ol><li>בוחרים סניפים בלשונית "סניפים"</li><li>מוסיפים מוצרים לסל</li><li>מקבלים גרף והמלצה איפה לקנות</li></ol>${S.sel.size ? "" : '<button class="cta" data-goto="s">בחירת סניפים</button>'}</div>`; $("cmp").innerHTML = ""; $("clubnote").innerHTML = ""; return; }
+ await renderBasket2();
+}
+async function renderBasket2() {
+ const codes = Object.keys(S.basket);
+ if (!codes.length) return;
  const cat = await catalog(); await files();
  $("bask").innerHTML = `<details class="bk" ${S.bkOpen ? "open" : ""}><summary>🛒 בסל · ${codes.length} מוצרים <button class="lnk" id="clrbask">ריקון הסל</button></summary><div class='box'>` + codes.map(c => `<div class="row">
-  <div class="grow" data-view="${esc(c)}"><div class="name">${esc(nmRaw(c))} <span class="peek">› מחירים</span></div><div class="sub">${cat[c] ? esc(cat[c][1] || "") : '<span class="miss">לא נמצא בנתונים של היום</span>'}</div></div>
+  <div class="grow" data-view="${esc(c)}"><div class="name">${esc(nmRaw(c))} <span class="peek">› מחירים</span></div><div class="sub">${cat[c] ? esc(cat[c][1] || "") : '<span class="miss">לא נמצא בנתונים של היום</span>'}</div>
+  ${hasSubs(c) ? `<button class="chip subt ${S.exact.has(c) ? "off" : ""}" data-exact="${esc(c)}" aria-pressed="${!S.exact.has(c)}">${S.exact.has(c) ? "🔒 רק המוצר הזה" : "🔄 מותר תחליף דומה"}</button>` : ""}</div>
   <div class="qty"><button data-d="${esc(c)}" data-v="-1" aria-label="פחות">−</button><b>${C.fmtQty(S.basket[c], kg(c))}</b><button data-d="${esc(c)}" data-v="1" aria-label="יותר">+</button></div></div>`).join("") + "</div></details>";
  compare(cat);
 }
 $("bask").addEventListener("toggle", e => { if (e.target.matches("details.bk")) { S.bkOpen = e.target.open; store("bkOpen", S.bkOpen); } }, true);
 $("bask").addEventListener("click", e => {
+ const ex = e.target.closest("[data-exact]");
+ if (ex) { const c = ex.dataset.exact; S.exact.has(c) ? S.exact.delete(c) : S.exact.add(c); store("exact", [...S.exact]); renderBasket2(); return; }
  if (e.target.id === "clrbask") { e.preventDefault(); if (confirm("לרוקן את כל הסל?")) { S.basket = {}; store("basket", S.basket); renderBasket(); } return; }
  const v = e.target.closest("[data-view]"); if (v) { showProduct(v.dataset.view); return; }
  const c = e.target.dataset.d; if (!c) return;
@@ -416,7 +470,7 @@ document.addEventListener("click", e => { const g = e.target.closest("[data-go]"
 
 // ---- product sheet: prices in every store, without adding to the basket ----
 async function showProduct(c) {
- const cat = await catalog(); await files();
+ const cat = await catalog(); await files(); await subsData();
  const [n, m, qn, u] = cat[c] || [nmRaw(c)];
  const rows = [...S.sel].filter(known).map(sid => ({ st: stOf(sid), r: best(sid, c, 1) }));
  const have = rows.filter(x => x.r).sort((a, b) => a.r.unit - b.r.unit), none = rows.filter(x => !x.r);
@@ -434,7 +488,9 @@ async function showProduct(c) {
  }
  openModal(`<h3>${esc(n)}</h3><div class="sub">${c.startsWith("g:") ? "כל הרשתות" + (kg(c) ? " · מחיר לק\"ג" : "") : esc(m || "") + " " + (qn ? esc(qn + " " + (u || "")) : "")}</div>
   <button class="addbig" data-addsheet="${esc(c)}">➕ הוסף לסל</button>${body}
-  ${none.length ? `<h4>לא נמכר ב־${none.length} סניפים</h4><p class="sub">${none.map(x => esc(x.st.he + " " + x.st.name)).join(" · ")}</p>` : ""}
+  ${none.length ? `<h4>לא נמכר ב־${none.length} סניפים</h4>` + none.map(x => { const r = !S.exact.has(c) && bestOrSub(x.st.sid, c, 1);
+   return r ? `<div class="line"><span><b>${esc(x.st.he)}</b> <span class="sub">${esc(x.st.name)}</span>${subLine(c, r)}</span><span class="price"><b>${ils(r.unit)}</b></span></div>`
+    : `<div class="line"><span><b>${esc(x.st.he)}</b> <span class="sub">${esc(x.st.name)}</span></span><span class="sub">אין</span></div>`; }).join("") : ""}
   ${!S.sel.size ? '<p class="sub">בחר סניפים בלשונית "סניפים" כדי לראות מחירים.</p>' : ""}`);
 }
 $("sheet").addEventListener("click", e => {
@@ -454,7 +510,7 @@ function compare(cat) {
  const nm = c => esc(nmRaw(c));
  const stores = [...S.sel].filter(known).map(sid => ({ sid, st: stOf(sid), f: S.files[sid] })).filter(x => x.f);
  const M = {};
- stores.forEach(x => { M[x.sid] = {}; Object.entries(S.basket).forEach(([c, q]) => { M[x.sid][c] = best(x.sid, c, q); }); });
+ stores.forEach(x => { M[x.sid] = {}; Object.entries(S.basket).forEach(([c, q]) => { M[x.sid][c] = bestOrSub(x.sid, c, q); }); });
  // an item no selected store sells must not make every store "incomplete": compare the rest, list it separately
  const nowhereAll = Object.keys(S.basket).filter(c => stores.every(x => !M[x.sid][c]));
  const items = Object.entries(S.basket).filter(([c]) => !nowhereAll.includes(c)), n = items.length;
@@ -462,29 +518,32 @@ function compare(cat) {
  const cheapestElse = (c, not) => { let b = null; stores.forEach(x => { const r = M[x.sid][c]; if (x.sid !== not && r && (!b || r.v < b.v)) b = { sid: x.sid, v: r.v }; }); return b; };
 
  const rows = stores.map(({ sid, st }) => {
-  let reg = 0, tot = 0; const lines = [], missing = [];
+  let reg = 0, tot = 0; const lines = [], missing = [], subbed = [];
   items.forEach(([c, q]) => {
    const r = M[sid][c]; if (!r) { missing.push(c); return; }
+   if (r.sub) subbed.push(c);
    reg += r.reg; tot += r.v;
-   lines.push(`<div class="line"><span>${nm(c)} ×${C.fmtQty(q, kg(c))}${promoTag(r.why)}</span><b>${ils(r.v)}</b></div>`);
+   lines.push(`<div class="line"><span>${nm(c)} ×${C.fmtQty(q, kg(c))}${subLine(c, r)}${promoTag(r.why)}</span><b>${ils(r.v)}</b></div>`);
   });
   const fill = {}; let fillSum = 0; const nowhere = [];
   missing.forEach(c => { const b = cheapestElse(c, sid); if (!b) { nowhere.push(c); return; } (fill[b.sid] ||= { v: 0, items: [] }); fill[b.sid].v += b.v; fill[b.sid].items.push(c); fillSum += b.v; });
-  return { sid, st, reg, tot, lines, missing, fill, fillSum, nowhere, full: tot + fillSum };
+  return { sid, st, reg, tot, lines, missing, subbed, fill, fillSum, nowhere, full: tot + fillSum };
  }).filter(r => r.lines.length > 0);
- // tier 0: complete; tier 1: missing at most a quarter of the basket (min 1) -> ranked by total incl. completion
- const tier = r => !r.missing.length ? 0 : r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 1 : 2;
+ // tier 0: complete with the exact products; 1: complete with substitutes; 2: missing at most a quarter of the
+ // basket (min 1), ranked by total incl. completion; 3: the rest
+ const tier = r => !r.missing.length ? (r.subbed.length ? 1 : 0) : r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 2 : 3;
  rows.sort((a, b) => tier(a) - tier(b) || a.full - b.full);
  const hidden = stores.length - rows.length;
- const singles = rows.filter(r => !r.missing.length);
+ const singles = rows.filter(r => !r.missing.length).sort((a, b) => a.tot - b.tot);
  const bestSingle = singles[0] || null;
+ const subNote = r => r && r.subbed.length ? ` · כולל ${r.subbed.length} ${r.subbed.length === 1 ? "תחליף" : "תחליפים"}` : "";
  const pair = C.bestPair(stores.map(x => x.sid), items.map(([c]) => c), M);
 
  // summary tiles
  let tiles = "";
  if (bestSingle) {
   const worst = singles[singles.length - 1], avg = singles.reduce((s, r) => s + r.tot, 0) / singles.length;
-  tiles = `<div class="tiles"><div class="tile wide"><div class="k">הסל המלא הכי זול</div><div class="v">${ils(bestSingle.tot)}</div><div class="s">${label(bestSingle.sid)}</div></div>
+  tiles = `<div class="tiles"><div class="tile wide"><div class="k">הסל המלא הכי זול</div><div class="v">${ils(bestSingle.tot)}</div><div class="s">${label(bestSingle.sid)}${subNote(bestSingle)}</div></div>
    ${singles.length > 1 ? `<div class="tile"><div class="k">חיסכון מול היקר</div><div class="v save">${ils(worst.tot - bestSingle.tot)}</div><div class="s">${Math.round((worst.tot - bestSingle.tot) / worst.tot * 100)}% פחות מ${esc(worst.st.he)}</div></div>
    <div class="tile"><div class="k">ממוצע ב-${singles.length} סניפים</div><div class="v">${ils(avg)}</div><div class="s">סניפים שיש בהם את כל הסל</div></div>` : ""}</div>`;
  } else if (rows.length) {
@@ -498,7 +557,7 @@ function compare(cat) {
   tip = `<div class="box tip"><div class="name">💡 הכי משתלם: שני סניפים · ${ils(pair.sum)}</div><div class="sub">${save}</div>
    ${[pair.a, pair.b].map(sid => `<div class="line"><span><b>${label(sid)}</b><br><span class="sub">${pair.take[sid].map(nm).join(", ")}</span></span><b>${ils(pair.part[sid])}</b></div>`).join("")}</div>`;
  } else if (bestSingle && n > 1) {
-  tip = `<div class="box tip"><div class="name">💡 הכי משתלם: הכול ב${label(bestSingle.sid)} · ${ils(bestSingle.tot)}</div><div class="sub">פיצול בין שני סניפים לא חוסך מספיק כדי להצדיק נסיעה נוספת</div></div>`;
+  tip = `<div class="box tip"><div class="name">💡 הכי משתלם: הכול ב${label(bestSingle.sid)} · ${ils(bestSingle.tot)}</div><div class="sub">${subNote(bestSingle).replace(" · ", "")}</div><div class="sub">פיצול בין שני סניפים לא חוסך מספיק כדי להצדיק נסיעה נוספת</div></div>`;
  }
 
  // chart: one bar per store, same order as the cards
@@ -506,16 +565,16 @@ function compare(cat) {
  const chart = barChart("מחיר הסל בכל סניף", anyPart ? "בסניפים שחסרים בהם מוצרים: המחיר כולל השלמה בסניף אחר" : "כולל מבצעים", rows.map((r, i) => ({
   v: r.full, go: "st-" + r.sid, kind: !r.missing.length ? (r === bestSingle ? "best" : "") : "part",
   label: shortName(r.st), aria: `${r.st.he} ${r.st.name}: ${ils(r.full)}${r.missing.length ? `, חסרים ${r.missing.length}` : ""}`,
-  val: ils0(r.full) + (r.missing.length ? `<small>חסרים ${r.missing.length}</small>` : "") })),
+  val: ils0(r.full) + (r.missing.length ? `<small>חסרים ${r.missing.length}</small>` : r.subbed.length ? `<small>🔄 ${r.subbed.length} תחליפים</small>` : "") })),
   `<span><i style="background:var(--bar-best)"></i>הכי זול בסניף אחד</span><span><i style="background:var(--bar)"></i>כל הסל</span>${anyPart ? '<span><i style="background:var(--bar-part)"></i>חסרים מוצרים</span>' : ""}`);
 
  // item x store table: top stores (max 4) side by side, cheapest per row highlighted
  const top = rows.slice(0, 4);
  const table = `<div class="box"><div class="tblwrap"><table class="mx"><thead><tr><th>מוצר</th>${top.map(r => `<th>${esc(r.st.he)}<br><span class="sub">${esc(r.st.name)}</span></th>`).join("")}</tr></thead><tbody>
-  ${items.map(([c, q]) => { const vs = top.map(r => M[r.sid][c]?.v ?? null), lo = Math.min(...vs.filter(v => v !== null));
-   return `<tr><td>${nm(c)} <span class="sub">×${C.fmtQty(q, kg(c))}</span></td>${vs.map(v => v === null ? '<td class="na">—</td>' : `<td class="${vs.filter(x => x !== null).length > 1 && Math.abs(v - lo) < 0.005 ? "cheap" : ""}">${v.toFixed(2)}${vs.filter(x => x !== null).length > 1 && Math.abs(v - lo) < 0.005 ? " ✓" : ""}</td>`).join("")}</tr>`; }).join("")}
+  ${items.map(([c, q]) => { const rs = top.map(r => M[r.sid][c]), vs = rs.map(r => r?.v ?? null), lo = Math.min(...vs.filter(v => v !== null)), many = vs.filter(x => x !== null).length > 1;
+   return `<tr><td>${nm(c)} <span class="sub">×${C.fmtQty(q, kg(c))}</span></td>${rs.map((r, i) => !r ? '<td class="na">—</td>' : `<td class="${many && Math.abs(r.v - lo) < 0.005 ? "cheap" : ""}" ${r.sub ? `title="תחליף: ${esc(S.cat?.[r.sub]?.[0] || "")}"` : ""}>${r.v.toFixed(2)}${r.sub ? " 🔄" : ""}${many && Math.abs(r.v - lo) < 0.005 ? " ✓" : ""}</td>`).join("")}</tr>`; }).join("")}
   <tr class="sum"><td>סה"כ</td>${top.map(r => `<td>${r.tot.toFixed(2)}${r.missing.length ? `<br><span class="miss">חסרים ${r.missing.length}</span>` : ""}</td>`).join("")}</tr></tbody></table></div>
-  <div class="sub" style="padding:8px 14px">✓ = הכי זול בשורה. — = לא נמכר בסניף. ${rows.length > 4 ? `מוצגים ${top.length} הסניפים המובילים מתוך ${rows.length}.` : ""}</div></div>`;
+  <div class="sub" style="padding:8px 14px">✓ = הכי זול בשורה. 🔄 = תחליף דומה. — = לא נמכר בסניף. ${rows.length > 4 ? `מוצגים ${top.length} הסניפים המובילים מתוך ${rows.length}.` : ""}</div></div>`;
 
  const cards = rows.map((r, i) => {
   const isTop = r === bestSingle;
@@ -524,6 +583,7 @@ function compare(cat) {
   return `<div class="box store ${isTop ? "best" : ""}" id="st-${esc(r.sid)}">
   <div class="t"><div class="who"><span class="av" aria-hidden="true">${esc([...r.st.he][0] || "?")}</span><div><div class="name"><span class="rank">${i + 1}</span>${esc(r.st.he)}${isTop ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}${staleTag(r.st)}</div></div></div>
   <div class="price"><span class="total">${ils(r.tot)}</span>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
+  ${r.subbed.length ? `<div class="fill">🔄 ${r.subbed.length} ${r.subbed.length === 1 ? "מוצר הוחלף" : "מוצרים הוחלפו"} בדומה: ${r.subbed.map(nm).join(", ")} · פירוט למטה</div>` : ""}
   ${r.missing.length ? `<div class="miss">חסרים ${r.missing.length} מתוך ${n} פריטים: ${r.missing.map(nm).join(", ")}</div>${fillHtml}
    ${r.fillSum ? `<div class="sub"><b>סה"כ כולל השלמה: ${ils(r.full)}</b></div>` : ""}` : ""}
   <details><summary>פירוט</summary>${r.lines.join("")}</details></div>`;
@@ -629,6 +689,7 @@ $("help").onclick = () => openModal(`<h3>מדריך</h3>
   <li>הסניף הזול ביותר שיש בו את כל הסל מסומן במסגרת זהב ובתג "הכי זול בסניף אחד". אחריו הסניפים המלאים מהזול ליקר, אחריהם סניפים שחסר בהם מעט, ובסוף השאר.</li>
   <li>מחיר מחוק הוא המחיר בלי מבצעים, והמחיר הגדול כולל מבצעים.</li>
   <li>בלחיצה על "פירוט" רואים מחיר לכל מוצר ואת תנאי המבצע ותוקפו.</li></ul>
+ <h4>תחליף דומה 🔄</h4><p>כשמוצר מהסל לא נמכר בסניף מסוים, נבחר באותו סניף המוצר הכי קרוב: אותו סוג מוצר, בגודל דומה (עד 20% הבדל), באותו טעם ובאותה גרסה. למשל קטשופ אסם במקום קטשופ היינץ, אבל לעולם לא רסק עגבניות או קטשופ חריף. ליד התחליף מופיע המחיר ל-100 גרם, כדי שאפשר יהיה להשוות גם כשהגודל שונה מעט. כשיש ספק לא מוצע תחליף. אם חשוב לך מוצר מסוים, לחץ בסל על "מותר תחליף דומה" כדי להחליף ל"רק המוצר הזה".</p>
  <h4>4. מבצעי מועדון</h4><p>בלשונית "מועדונים" מסמנים באילו מועדוני רשתות אתה חבר. מבצעי מועדון נספרים רק ברשתות שסימנת.</p>
  <h4>5. מתי הנתונים מתעדכנים</h4><p>פעם בלילה. העדכון מתחיל ב־02:37 בחורף וב־03:37 בקיץ, ומסתיים בדרך כלל תוך חצי שעה. לפעמים GitHub, שמריץ את העדכון, מעכב אותו בכמה שעות, ולכן הדבר הבטוח הוא תאריך הנתונים שמופיע למעלה: אם כתוב בו התאריך של היום, המחירים עדכניים. סניף שלא עודכן מסומן באדום עם תאריך הנתונים שלו, ונתונים בני יותר משלושה ימים לא מוצגים בכלל. כפתור 🔄 למעלה טוען את הגרסה והנתונים העדכניים.</p>
  <h4>חשוב לדעת</h4><ul>

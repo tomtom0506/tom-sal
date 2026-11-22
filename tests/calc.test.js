@@ -81,3 +81,36 @@ test("bestPair splits the basket between two stores", () => {
  const bp = C.bestPair(["s1", "s2", "s3"], ["x", "y"], M);
  near(bp.sum, 8); assert.deepStrictEqual([bp.a, bp.b], ["s1", "s3"]);
 });
+
+test("pickSub: best-scored substitute the store sells, cheapest among equals", () => {
+ const f = { p: { heinz: 15, osem: 12, tomo: 9, other: 8 }, pr: {}, l: {} };
+ // top score 1.0: osem and tomo are both sold -> cheapest (tomo); "other" has a lower score and is ignored
+ let r = C.pickSub(f, [["missing", 1.0], ["osem", 1.0], ["tomo", 1.0], ["other", 0.7]], 1, false, T);
+ assert.strictEqual(r.sub, "tomo"); near(r.v, 9);
+ // nothing at the top score is sold -> fall to the next score
+ r = C.pickSub(f, [["missing", 1.0], ["other", 0.7]], 2, false, T);
+ assert.strictEqual(r.sub, "other"); near(r.v, 16);
+ assert.strictEqual(C.pickSub(f, [["missing", 1]], 1, false, T), null);
+ assert.strictEqual(C.pickSub(f, undefined, 1, false, T), null);
+});
+
+test("unitPrice per 100 g / 100 ml / unit", () => {
+ near(C.unitPrice(14.9, [700, "g"]).v, 14.9 / 7);
+ assert.strictEqual(C.unitPrice(14.9, [700, "g"]).per, "ל-100 גרם");
+ assert.strictEqual(C.unitPrice(9, [1000, "ml"]).per, 'ל-100 מ"ל');
+ near(C.unitPrice(30, [30, "u"]).v, 1);
+ assert.strictEqual(C.unitPrice(10, null), null);
+});
+
+test("pickSub scales the substitute price to the original size", () => {
+ // bug found in the UI test: a 500 g mayonnaise won against 620 g just by being smaller
+ const f = { p: { small: 9.9, same: 12.5 }, pr: {}, l: {} };
+ const z = { orig: [620, "g"], small: [500, "g"], same: [600, "g"] };
+ const r = C.pickSub(f, [["small", 1], ["same", 1]], 1, false, T, "orig", z);
+ assert.strictEqual(r.sub, "small");                 // 9.90 * 620/500 = 12.28 < 12.50 * 620/600 = 12.92
+ near(r.v, 9.9 * 620 / 500); near(r.paid, 9.9); near(r.scale, 1.24);
+ const r2 = C.pickSub({ p: { small: 11, same: 12.5 }, pr: {}, l: {} }, [["small", 1], ["same", 1]], 1, false, T, "orig", z);
+ assert.strictEqual(r2.sub, "same");                 // 11 * 1.24 = 13.64 > 12.92: the bigger pack is the better deal
+ const r3 = C.pickSub(f, [["small", 1]], 1, false, T, "orig", { small: [500, "g"] });
+ near(r3.v, 9.9);                                    // unknown original size: no scaling
+});
