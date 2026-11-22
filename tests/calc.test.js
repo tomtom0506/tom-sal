@@ -125,3 +125,11 @@ test("missing items are estimated at their average price, never 0", () => {
  assert.ok(C.estimate(M, ["a", "b", "c"], "a", ["x", "y"]).total < e.total);
  assert.strictEqual(C.avgPrice({ a: { z: null } }, ["a"], "z"), null);
 });
+
+test("pickSub with a merged product as substitute (kg vs unit produce)", () => {
+ const f = { p: { u1: 8.9 }, pr: {}, l: {} };
+ const expand = c => c === "g:cuc unit" ? ["u1", "u2"] : [c];
+ const r = C.pickSub(f, [["g:cuc unit", 0.9]], 1, false, T, "g:cuc", {}, expand);
+ assert.strictEqual(r.sub, "g:cuc unit"); near(r.v, 8.9);
+ assert.strictEqual(C.pickSub(f, [["g:cuc unit", 0.9]], 1, false, T, "g:cuc", {}), null);  // without expand: not found
+});

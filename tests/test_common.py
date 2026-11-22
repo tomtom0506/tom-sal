@@ -135,6 +135,9 @@ class Grouping(unittest.TestCase):
         self.assertEqual(k(7), k(8))
         self.assertNotEqual(k(9), k(7))                              # smoked deli turkey at 110/kg split by the price guard
 
+    def test_white_gourmet_potato_is_potato(self):
+        self.assertEqual(c.produce_key("תפוח אדמה לבן גורמה")[0], c.produce_key("תפוח אדמה קטן לאפיה")[0])
+
     def test_potato_vs_apple_and_cut_off_sizes(self):
         # from Tomer's table: Osher Ad potatoes ("תפוח אדמה", singular) and ground beef "1.2 ק"" were not matched
         self.assertEqual(c.produce_key("תפוח אדמה תפזורת")[0], c.produce_key("תפוא לבן ישראל")[0].replace(" לבן", ""))
@@ -203,6 +206,22 @@ class Substitutes(unittest.TestCase):
     def test_brand_plus_flavor_only_has_no_kind(self):
         # bug found in the UI test: Fanta grape (soda) was offered for Nevi'ot+ grape (flavored water)
         P = {"fanta": "פאנטה ענבים 1.5 ליטר", "neviot": "נביעות + ענבים 1.5 ליטר"}
+        self.assertEqual(c.substitutes(P)[0], {})
+
+    def test_cut_off_milk_and_fillers(self):
+        # Tomer: Yochananof "has no 3% milk" - the basket item's name was cut off before "ליטר"
+        P = {"tnuva": "חלב תנובה 3% שומן 1", "tara": "טרה חלב 3% 1למהדרין", "one": "חלב 1% 1 ליטר"}
+        s = c.substitutes(P, units={"tnuva": "100 ליטר"})[0]
+        self.assertEqual([d for d, _ in s["tnuva"]], ["tara"])
+        # the trailing number of a name without % may be the % itself: "שקית 3" is not 3 litres
+        self.assertIsNone(c.product_features("חלב תנובה טרי שקית 3", "ליטר")["size"])
+        # the unit field may state the pack size when the name does not
+        self.assertEqual(c.product_features("חלב 3% ועדת מהדרין בקרטון", "1 ליטר")["size"], 1000)
+        self.assertIsNone(c.product_features("קפה נמס", "100 גרם")["size"])     # "100 גרם" is the unit-price basis
+
+    def test_flavor_and_size_words_from_live_sample(self):
+        P = {"a": "משקה סויה שוקו 1 ליטר", "b": "משקה סויה 1 ליטר", "c": "צלחות קטן 50 יחידות", "d": "צלחות גדול 50 יח",
+             "e": "תחליב רחצה אלוורה 750 מל", "f": "תחליב רחצה ווניל 750 מל"}
         self.assertEqual(c.substitutes(P)[0], {})
 
     def test_unit_price_guard(self):
