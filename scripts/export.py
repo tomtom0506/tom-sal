@@ -1,5 +1,5 @@
 """Export slim JSON files for the web app: out/sal.db -> site/data/"""
-import json, sqlite3, sys
+import json, re, sqlite3, sys
 from pathlib import Path
 import israeli_prices as ilp
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -30,24 +30,35 @@ def main():
 
  # 1) catalog + cross-chain groups (produce, deli, eggs)
  prod = db.execute("SELECT item_code, name, manufacturer, quantity, unit, is_weighted FROM products").fetchall()
- code2group = group_products((c, n, w) for c, n, m, q, u, w in prod)
+ aliases, per_kg, typical = {}, {}, {}
+ for c, p in db.execute("SELECT item_code, price FROM prices WHERE price > 0"):
+  typical.setdefault(c, []).append(p)
+ typical = {c: sorted(v)[len(v) // 2] for c, v in typical.items()}
+ code2group = group_products(((c, n, w) for c, n, m, q, u, w in prod), aliases, per_kg, typical)
  cat, groups = {}, {}
  for c, n, m, q, u, w in prod:
   g = code2group.get(c)
   if g:
    egg = g.startswith("ביצים")
-   groups.setdefault(g, {"u": "" if egg else u, "w": 0 if egg else int(bool(w)), "c": []})["c"].append(c)
+   groups.setdefault(g, {"u": "" if egg else u, "w": 0 if egg else int(bool(w) or c in per_kg), "c": []})["c"].append(c)
   else:
    cat[c] = [n, m, q, u]
+ # search words of a merged product: the chains' own names ("בשר בקר טחון טרי" finds "בקר טחון")
+ pname = {c: n for c, n, m, q, u, w in prod}
  for g, v in groups.items():
-  cat["g:" + g] = [g, "", None, v["u"], v["w"], v["c"]]
+  shown, kw = set(g.split()), []
+  for c in v["c"]:
+   for w in re.findall(r"[א-ת]{2,}", pname.get(c) or ""):
+    if w not in shown and w not in kw:
+     kw.append(w)
+  cat["g:" + g] = [g, "", None, v["u"], v["w"], v["c"], " ".join(kw[:20])]
 
  # 2) price sanity inside groups: a price far from the group median is almost always a unit error
  #    (per unit vs per kg, per 100g) - drop it rather than show a wrong cheapest store
  gp = {}
  for c, p in db.execute("SELECT item_code, price FROM prices"):
   if c in code2group and p:
-   gp.setdefault(code2group[c], []).append(p)
+   gp.setdefault(code2group[c], []).append(p * per_kg.get(c, 1))
  med = {g: sorted(v)[len(v) // 2] for g, v in gp.items() if len(v) >= 3}
  dropped = 0
 
@@ -69,6 +80,7 @@ def main():
   for c, p in db.execute("SELECT item_code, price FROM prices WHERE sid=?", (sid,)):
    if not p or p <= 0:
     continue
+   p = round(p * per_kg.get(c, 1), 2)  # weight-labeled packs of fresh produce / meat: price per kg
    g = code2group.get(c)
    if g in med and not (0.4 * med[g] <= p <= 3 * med[g]):
     dropped += 1
@@ -87,11 +99,12 @@ def main():
   dump(DATA / "s" / f"{key}.json", {"p": prices, "pr": promos, "l": {c: ps for c, ps in l.items() if ps}})
  data_date = meta.get("data_date") or max((d for d in dates if d), default=today)
  dump(DATA / "stores.json", {"updated": data_date, "run_at": meta.get("run_at"), "exported": today, "stores": stores})
+ cat["_alias"] = aliases  # old group names -> new, so baskets saved before a regrouping keep working
  dump(DATA / "catalog.json", cat)
 
  # 4) substitutes: for a product a store does not sell, the closest same-kind product of similar size
  #    (loaded by the site only when needed). Unit prices guard against one name hiding two products.
- named = {c: v[0] for c, v in cat.items() if not c.startswith("g:") and v[0]}
+ named = {c: v[0] for c, v in cat.items() if not c.startswith(("g:", "_")) and v[0]}
  prices_by = {}
  for c, p in db.execute("SELECT item_code, price FROM prices WHERE price > 0"):
   if c in named:

@@ -163,21 +163,156 @@ def egg_group(n):
     return " ".join(x for x in ["ביצים", size, f"{count} יח׳", kind] if x)
 
 
-def group_products(rows):
+# ---- fresh produce / meat / fish: one product across chains, whatever each chain calls it ----
+# Each chain names its counter items differently ("נתחי סלמון טרי שופרסל לק"ג", "פילה סלמון פרוס טרי סקין",
+# "סלמון טרי"), so without this every one of them looked like a product sold in 2-3 stores.
+PRODUCE = set("""
+בצל שום חסה עגבניה עגבניות מלפפון מלפפונים גזר תפוחי תפוא בטטה פלפל חציל קישוא קישואים כרוב כרובית ברוקולי סלק
+צנון צנונית תרד מנגולד פטרוזיליה כוסברה שמיר נענע בזיליקום כרפס סלרי פטריות פטריה שמפיניון אבוקדו לימון לימונים
+תפוז תפוזים קלמנטינה קלמנטינות מנדרינה אשכולית בננה בננות ענבים ענב אגס אגסים אפרסק אפרסקים נקטרינה שזיף שזיפים
+משמש מנגו אננס אבטיח מלון תות תותים קיווי רימון רימונים אפרסמון תמר תמרים תאנים תאנה דובדבן דובדבנים קולרבי לפת
+ארטישוק אספרגוס ג'ינג'ר גינגר זוקיני דלעת דלורית שעועית ירוקה במיה חסות פומלה פומלית ליים פסיפלורה ליצי קומקוואט
+סלמון דג אמנון מושט לברק דניס בורי מוסר פורל קרפיון הליבוט נסיכת בקלה טונה שרימפס
+בקר טחון עוף חזה שוקיים שוקיות כרעיים כנפיים פרגית פרגיות הודו כבש טלה עגל אנטריקוט סינטה צלי פילה כבד לבבות
+קורקבנים צלעות אסאדו שייטל כתף צוואר
+""".split())
+# the only other words a fresh product keeps: what really changes it. Everything else (supplier, slaughterhouse,
+# kashrut, marketing: "עטרה", "מחפוד", "פרימה", "שלי", "מוביל"...) is ignored.
+PRODUCE_KEEP = set("""
+קפוא קפואה קפואים אורגני אורגנית ירוק ירוקה ירוקים אדום אדומה אדומים צהוב צהובה צהובים כתום לבן לבנה לבנים שחור שחורים
+סגול שרי תמר מגי עגולה עגול ערבית אייסברג לאליק לליק סלנובה סנלובה רומית גמביט גביטה משי קיסר בייבי שלם שלמה מחולק
+טחון אדמה מתוק מתוקה חריף חריפה כנפיים קלוף מקולף זעיר
+""".split())
+FISH = {"סלמון", "דג", "אמנון", "מושט", "לברק", "דניס", "בורי", "מוסר", "פורל", "קרפיון", "הליבוט", "נסיכת", "בקלה", "טונה"}
+# processed products that merely contain a produce word stay as they are
+NOT_PRODUCE = re.compile(r"בטעם|ממרח|סלט|רוטב|מרק|אבקת|אבקה|מיובש|מיובשים|מטוגן|טבעות|חטיף|ציפס|צ'יפס|קרקר|שימורי|"
+                         r"כבוש|כבושים|בחומץ|במלח|ממולא|תבלין|ריבה|ריבת|מיץ|נקטר|משקה|קפוא\s+מוקפץ|פירה|קציצ|"
+                         r"נקניק|פסטרמה|המבורגר|שווארמה|קבב|לחתול|לכלב|גור|מזון|פיצה|בורקס|מאפה|עוגה|עוגת|גלידה|יוגורט|"
+                         r"חתוכות|חתוכים|קצוצות|קצוץ|קצוצים|מרוסקות|מרוסק|קרטונית|צמחוני|טבעוני|בגריל|דק\s*דק|מן הצומח|"
+                         r"מקורמל|ר\.\s*טבעי|רסק|מחית|מעדן|חומ\b|\d+\s*-\s*\d+|ספרינג|פריגת|תרכיז|מוקפץ|ממרח|"
+                         r"כתוש|גבישי|שבבים|מעושן|מעושנת|מבושל|אפוי|צלוי|ממותק|סוכר|מקולפות|פסאטה|בשמן|במים|בקופס|קופסת|צנצנת|פחית|מהצומח|צמחי|ביונד|(?i:mutti|beyond)")
+# wording that does not change what the product is
+PRODUCE_DESC = {"נתחי", "נתח", "פרוס", "פרוסות", "פרוסים", "סקין", "פרימיום", "פרימ", "מנות", "מנה", "ללא", "עור", "מובחר",
+                "מובחרים", "טרי", "טרייה", "טריה", "טריים", "טריות", "איכות", "מהדרין", "כשר", "ישראל", "ישראלי", "ישראלית",
+                "יבוא", "מיובא", "מיבוא", "הידרופונית", "הידרופוני", "מגשית", "מגש", "ארוז", "ארוזה", "בשקית", "בקרטון",
+                "שטופים", "שטוף", "קמעונאי", "יחידה", "ליחידה", "במשקל", "משקל", "לקג", "קג", "ק", "גדול", "גדולה",
+                "בינוני", "בינונית", "קטן", "קטנה", "סוג", "א", "מועדף", "נבחר", "באריזה", "ע", "קלאסי", "בשר",
+                "בתפזורת", "תפזורת", "שק", "בשק", "רשת", "ברשת", "גלאט", "מבצע", "חלק", "חלקה", "לק", "ג", "קילו", "שקית", "עם", "נתחים"}
+PRODUCE_DESC_BY_HEAD = {"בצל": {"יבש", "לבן"}, "שום": {"יבש", "לבן"}, "סלמון": {"פילה", "אטלנטי", "נורבגי"},
+                        "טחון": {"פילה"}, "בקר": {"פילה"}}
+PRODUCE_SYN = {"סגול": "אדום", "עגבניות": "עגבניה", "מלפפונים": "מלפפון", "תפוזים": "תפוז", "לימונים": "לימון",
+               "בננות": "בננה", "קישואים": "קישוא", "תותים": "תות", "אגסים": "אגס", "תמרים": "תמר", "רימונים": "רימון",
+               "פרגיות": "פרגית", "שוקיות": "שוקיים", "תאנים": "תאנה", "דובדבנים": "דובדבן", "שזיפים": "שזיף",
+               "אפרסקים": "אפרסק", "קלמנטינות": "קלמנטינה", "חסות": "חסה", "תפוא": "תפוחי אדמה",
+               "מוקפא": "קפוא", "מקפוא": "קפוא", "מוקפאת": "קפואה", "קפואות": "קפואים", "עגבנייה": "עגבניה",
+               "סנלובה": "סלנובה", "לליק": "לאליק", "גביטה": "גמביט"}
+
+
+def produce_key(name):
+    """-> (key, display) for a fresh produce / meat / fish item, or None. key ignores word order and wording that does
+    not change the product; display keeps the chain's order of the remaining words."""
+    n = BIDI.sub("", name or "")
+    if NOT_PRODUCE.search(n) or re.search(r"(?i)\bpuff\b", n):
+        return None
+    n = re.sub(r"(\d)([א-ת])", r"\1 \2", re.sub(r"([א-ת])(\d)", r"\1 \2", n))
+    words = [w for w in re.sub(r"[\"'׳״()\[\].,*/\\\-+:!%`]", " ", n).split() if re.fullmatch(r"[א-ת]{2,}|[א-ת]", w)]
+    words = [PRODUCE_SYN.get(w, w) for w in words if w not in BRANDS and w not in STOP_WORDS]
+    words = [x for w in words for x in w.split()]
+    core = [w for w in words if w not in PRODUCE_DESC]
+    if core and core[0] in PRODUCE:
+        core = [w for w in core if w in PRODUCE or w in PRODUCE_KEEP]
+    if core == ["טחון"]:
+        core = ["בקר", "טחון"]            # "בשר טחון" with no animal named is beef
+    if not core or core[0] not in PRODUCE:
+        return None
+    if re.search(r"(\d)\s*(מ\"ל|מל|ליטר|ל')(?![א-ת])", n):
+        return None                       # sold by volume: a drink or a sauce, not produce
+    if core[0] == "פילה" and len(core) > 1 and core[1] in FISH:
+        core = core[1:]                   # "פילה סלמון" = salmon; "פילה בקר" (a cut) stays as it is
+    drop = PRODUCE_DESC_BY_HEAD.get(core[0], set())
+    core = [w for w in core if w not in drop] or core[:1]
+    seen, disp = set(), []
+    for w in core:
+        if w not in seen:
+            seen.add(w); disp.append(w)
+    disp = disp[:4]
+    return " ".join(sorted(disp)), " ".join(disp)
+
+
+def _old_group(code, name, w):
+    """The grouping used up to v1.8.0 - kept only to migrate saved baskets to the new group names."""
+    g = egg_group(name)
+    if g:
+        return g
+    if ":" in code or len(code) < 8 or w:
+        base = norm_name(name)
+        if base:
+            tag = size_tag(name)
+            return f"{base} {tag}" if tag else base
+    return None
+
+
+def group_products(rows, aliases=None, factors=None, prices=None, max_ratio=1.8):
     """rows: iterable of (code, name, weighted). Returns {code: group_name} for codes that belong to a cross-chain group.
-    Weighted (price per kg) and per-unit items with the same name are split, so a kg price is never compared to a unit price."""
-    pre = {}
+    Weighted (price per kg) and per-unit items with the same name are split, so a kg price is never compared to a unit price.
+    aliases: optional dict filled with {old group name: new group name} for saved baskets.
+    factors: optional dict filled with {code: k}; the code's price times k is its price per kg (a 500 g pack of
+    ground beef joins the fresh ground beef sold by weight, compared per kg).
+    prices: optional {code: typical price}. A merged fresh product whose member costs more than max_ratio times the
+    group's typical price (per kg) is split back out: smoked deli turkey is not fresh turkey breast."""
+    rows = list(rows)
+    pre, disp_votes = {}, {}
     for code, name, w in rows:
         g = egg_group(name)
         if g:
             pre[code] = (g, None)  # eggs: always per pack
             continue
+        tag = size_tag(name)
+        pk = produce_key(name)
+        if pk:
+            key, disp = pk
+            ww = int(bool(w))
+            # only packs sold per unit: an item sold by weight is already priced per kg, whatever its name says
+            if tag and not ww and tag.split(" ", 1)[1] in ("גרם", "ק\"ג"):
+                grams = float(tag.split(" ", 1)[0]) * (1000 if tag.endswith("ק\"ג") else 1)
+                if grams >= 50:           # a weight-labeled pack: compare per kg with the counter items
+                    if factors is not None:
+                        factors[code] = 1000 / grams
+                    tag, ww = "", 1
+            if ww:
+                tag = ""                  # sold by weight = priced per kg; a portion weight in the name is no size
+            key = f"{key} {tag}" if tag else key
+            pre[code] = (("p", key), ww)
+            disp_votes.setdefault(key, {}).setdefault(f"{disp} {tag}" if tag else disp, 0)
+            disp_votes[key][f"{disp} {tag}" if tag else disp] += 1
+            continue
         if ":" in code or len(code) < 8 or w:
             base = norm_name(name)
             if not base:
                 continue
-            tag = size_tag(name)
             pre[code] = (f"{base} {tag}" if tag else base, int(bool(w)))
+    if prices:
+        by = {}
+        for code, (g, w) in pre.items():
+            if isinstance(g, tuple) and code in prices:
+                by.setdefault((g, w), []).append(code)
+        for (g, w), codes in by.items():
+            if len(codes) < 3:
+                continue
+            vals = sorted(prices[c] * (factors or {}).get(c, 1) for c in codes)
+            med = vals[len(vals) // 2]
+            for code in codes:
+                v = prices[code] * (factors or {}).get(code, 1)
+                if v > max_ratio * med or v * max_ratio < med:
+                    name = next(n for cc, n, _ in rows if cc == code)
+                    base = norm_name(name)
+                    if base:
+                        pre[code] = (base, w)       # not the same product after all: back to its own name
+                    else:
+                        del pre[code]
+    # a merged product is shown under the name most chains use (shortest on a tie)
+    names = {k: sorted(v.items(), key=lambda kv: (-kv[1], len(kv[0])))[0][0] for k, v in disp_votes.items()}
+    pre = {c: ((names[g[1]] if isinstance(g, tuple) else g), w) for c, (g, w) in pre.items()}
     kinds = {}
     for g, w in pre.values():
         if w is not None:
@@ -187,6 +322,16 @@ def group_products(rows):
         if w == 0 and len(kinds.get(g, ())) > 1:
             g += " ליחידה"
         out[code] = g
+    if aliases is not None:
+        votes = {}
+        for code, name, w in rows:
+            o = _old_group(code, name, w)
+            if o and code in out and out[code] != o:
+                votes.setdefault(o, {}).setdefault(out[code], 0)
+                votes[o][out[code]] += 1
+        for o, v in votes.items():
+            if o not in out.values():
+                aliases[o] = max(v.items(), key=lambda kv: kv[1])[0]
     return out
 
 
