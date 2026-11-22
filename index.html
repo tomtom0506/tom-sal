@@ -186,7 +186,7 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <script>
 const VERSION = "1.8.2";
 const CHANGELOG = [
- ["1.8.2", "23.11.2026", ["תפוחי אדמה: גם \"תפוח אדמה\" (ביחיד, כמו באושר עד) מזוהה, ולכן מופיע תפוח האדמה הרגיל ולא רק זן מיוחד ויקר", "בשר טחון: אריזה ששמה נקטע בקובץ הרשת (\"1.2 ק\"\") נספרת לפי ק\"ג. באושר עד, למשל, מוצג ₪37.42 לק\"ג במקום ₪89.80", "דג קפוא ששמו נקטע (\"קפ\") לא נספר יותר כדג טרי", "טווח המחירים הסביר בתוך מוצר מאוחד הורחב, כדי שבשר טחון זול לא יוצא מההשוואה"]],
+ ["1.8.2", "23.11.2026", ["מוצר שחסר בסניף לא נספר יותר כ-0: בסכום הכולל, בטבלה ובגרף הוא נספר לפי המחיר הממוצע שלו בשאר הסניפים שבחרת, ומסומן ב-~. כך סניף שחסרים בו מוצרים לא נראה זול יותר בטעות", "תפוחי אדמה: גם \"תפוח אדמה\" (ביחיד, כמו באושר עד) מזוהה, ולכן מופיע תפוח האדמה הרגיל ולא רק זן מיוחד ויקר", "בשר טחון: אריזה ששמה נקטע בקובץ הרשת (\"1.2 ק\"\") נספרת לפי ק\"ג. באושר עד, למשל, מוצג ₪37.42 לק\"ג במקום ₪89.80", "דג קפוא ששמו נקטע (\"קפ\") לא נספר יותר כדג טרי", "טווח המחירים הסביר בתוך מוצר מאוחד הורחב, כדי שבשר טחון זול לא יוצא מההשוואה"]],
  ["1.8.1", "23.11.2026", ["דגים, בשר, ירקות ופירות טריים מאוחדים בין הרשתות: למשל \"סלמון\" אחד במקום עשרות שמות שונים, וכך הוא נמצא ברוב הסופרים במקום ב-2-3 בלבד. שם הספק או המשחטה (עטרה, מחפוד, עוף הכפר...) לא מפצל יותר את המוצר", "בשר טחון, עוף, בצל וחסה נמצאים ברוב הסופרים: כל רשת קוראת להם אחרת, ועכשיו הם מזוהים כאותו מוצר", "אריזה במשקל קבוע של מוצר טרי (למשל בשר טחון 500 גרם) מושווית לפי מחיר לק\"ג מול מה שנמכר בדלפק", "חיפוש: המוצר עצמו מופיע לפני מוצרים שרק מכילים את המילה (בצל לפני חטיף בטעם בצל), והחיפוש מוצא גם את השמות המקוריים של הרשתות", "סל ששמרת עובר אוטומטית לשמות החדשים"]],
  ["1.8.0", "22.11.2026", ["תחליף דומה: כשמוצר שבחרת לא נמכר בסניף, נבחר המוצר הכי קרוב באותו סניף, למשל קטשופ אסם 750 גרם במקום קטשופ היינץ 700 גרם, ומסומן ב-🔄", "תחליף הוא תמיד אותו סוג מוצר ובגודל דומה (עד 20% הבדל). לא מחליפים טעם, גרסה (חריף, מופחת סוכר, אורגני) או מארז", "ליד כל תחליף מוצג המחיר ל-100 גרם או ל-100 מ\"ל, כדי שההבדל בגודל יהיה שקוף", "לכל מוצר בסל אפשר לבחור \"רק המוצר הזה\" כדי לא לקבל תחליף", "סניף שיש בו את כל הסל רק בעזרת תחליפים מדורג אחרי סניף שיש בו את כל המוצרים המקוריים"]],
  ["1.7.1", "21.11.2026", ["תיקון: בכל סניף חסרו כ-1% מהמוצרים (למשל כ-350 ביוחננוף אור יהודה גדול) בגלל דפדוף לא יציב בהורדה מ-over.org.il. עכשיו כל המוצרים נטענים, ויש בדיקה לילית שמספרם תואם לקובץ של הסניף"]],
@@ -311,13 +311,26 @@ const C = (() => {
   if (cls === "u") return { v: price / size, per: "ליחידה" };
   return { v: price / size * 100, per: cls === "g" ? "ל-100 גרם" : "ל-100 מ\"ל" };
  }
- return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice };
+ // Estimate for an item a store does not sell: its average line price in the stores that do (never 0, which
+ // would make an incomplete basket look cheap). M: sid -> item -> {v} | null. Returns null if no store has it.
+ function avgPrice(M, sids, c) {
+  const vs = sids.map(s => M[s][c]).filter(Boolean).map(r => r.v);
+  return vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null;
+ }
+ function estimate(M, sids, sid, items) {
+  let tot = 0, est = 0; const missing = [];
+  for (const c of items) { const r = M[sid][c]; if (r) tot += r.v; else { const a = avgPrice(M, sids, c); if (a !== null) { est += a; missing.push(c); } } }
+  return { tot, est, total: tot + est, missing };
+ }
+ return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice, avgPrice, estimate };
 })();
 // ==calc-end==
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ils = n => "₪" + n.toFixed(2);
+// "~₪12.30": an estimate; kept left-to-right so the ~ stays in front of the number in RTL text
+const approx = t => `<span dir="ltr">~${t}</span>`;
 const ils0 = n => "₪" + (n >= 100 ? Math.round(n).toLocaleString("he-IL") : n.toFixed(2));
 const dmy = d => d ? d.slice(5, 10).split("-").reverse().join(".") : "";
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
@@ -549,12 +562,14 @@ function compare(cat) {
   });
   const fill = {}; let fillSum = 0; const nowhere = [];
   missing.forEach(c => { const b = cheapestElse(c, sid); if (!b) { nowhere.push(c); return; } (fill[b.sid] ||= { v: 0, items: [] }); fill[b.sid].v += b.v; fill[b.sid].items.push(c); fillSum += b.v; });
-  return { sid, st, reg, tot, lines, missing, subbed, fill, fillSum, nowhere, full: tot + fillSum };
+  // missing items are estimated at their average price in the other selected stores, never counted as 0
+  const e = C.estimate(M, stores.map(x => x.sid), sid, items.map(([c]) => c));
+  return { sid, st, reg, tot, lines, missing, subbed, fill, fillSum, nowhere, full: tot + fillSum, est: e.total, estPart: e.est };
  }).filter(r => r.lines.length > 0);
  // tier 0: complete with the exact products; 1: complete with substitutes; 2: missing at most a quarter of the
  // basket (min 1), ranked by total incl. completion; 3: the rest
  const tier = r => !r.missing.length ? (r.subbed.length ? 1 : 0) : r.missing.length <= Math.max(1, Math.floor(n / 4)) ? 2 : 3;
- rows.sort((a, b) => tier(a) - tier(b) || a.full - b.full);
+ rows.sort((a, b) => tier(a) - tier(b) || a.est - b.est);
  const hidden = stores.length - rows.length;
  const singles = rows.filter(r => !r.missing.length).sort((a, b) => a.tot - b.tot);
  const bestSingle = singles[0] || null;
@@ -569,7 +584,7 @@ function compare(cat) {
    ${singles.length > 1 ? `<div class="tile"><div class="k">חיסכון מול היקר</div><div class="v save">${ils(worst.tot - bestSingle.tot)}</div><div class="s">${Math.round((worst.tot - bestSingle.tot) / worst.tot * 100)}% פחות מ${esc(worst.st.he)}</div></div>
    <div class="tile"><div class="k">ממוצע ב-${singles.length} סניפים</div><div class="v">${ils(avg)}</div><div class="s">סניפים שיש בהם את כל הסל</div></div>` : ""}</div>`;
  } else if (rows.length) {
-  tiles = `<div class="tiles"><div class="tile wide"><div class="k">אין סניף אחד שיש בו את כל הסל</div><div class="v">${ils(rows[0].full)}</div><div class="s">הכי זול כולל השלמה: ${label(rows[0].sid)}</div></div></div>`;
+  tiles = `<div class="tiles"><div class="tile wide"><div class="k">אין סניף אחד שיש בו את כל הסל</div><div class="v">${approx(ils(rows[0].est))}</div><div class="s">הכי זול, כולל הערכה למוצרים החסרים: ${label(rows[0].sid)}</div></div></div>`;
  }
 
  let tip = "";
@@ -584,19 +599,19 @@ function compare(cat) {
 
  // chart: one bar per store, same order as the cards
  const anyPart = rows.some(r => r.missing.length);
- const chart = barChart("מחיר הסל בכל סניף", anyPart ? "בסניפים שחסרים בהם מוצרים: המחיר כולל השלמה בסניף אחר" : "כולל מבצעים", rows.map((r, i) => ({
-  v: r.full, go: "st-" + r.sid, kind: !r.missing.length ? (r === bestSingle ? "best" : "") : "part",
+ const chart = barChart("מחיר הסל בכל סניף", anyPart ? "בסניפים שחסרים בהם מוצרים, כל מוצר חסר נספר לפי המחיר הממוצע שלו בשאר הסניפים (~)" : "כולל מבצעים", rows.map((r, i) => ({
+  v: r.est, go: "st-" + r.sid, kind: !r.missing.length ? (r === bestSingle ? "best" : "") : "part",
   label: shortName(r.st), aria: `${r.st.he} ${r.st.name}: ${ils(r.full)}${r.missing.length ? `, חסרים ${r.missing.length}` : ""}`,
-  val: ils0(r.full) + (r.missing.length ? `<small>חסרים ${r.missing.length}</small>` : r.subbed.length ? `<small>🔄 ${r.subbed.length} תחליפים</small>` : "") })),
+  val: (r.missing.length ? approx(ils0(r.est)) : ils0(r.est)) + (r.missing.length ? `<small>חסרים ${r.missing.length}</small>` : r.subbed.length ? `<small>🔄 ${r.subbed.length} תחליפים</small>` : "") })),
   `<span><i style="background:var(--bar-best)"></i>הכי זול בסניף אחד</span><span><i style="background:var(--bar)"></i>כל הסל</span>${anyPart ? '<span><i style="background:var(--bar-part)"></i>חסרים מוצרים</span>' : ""}`);
 
  // item x store table: top stores (max 4) side by side, cheapest per row highlighted
  const top = rows.slice(0, 4);
  const table = `<div class="box"><div class="tblwrap"><table class="mx"><thead><tr><th>מוצר</th>${top.map(r => `<th>${esc(r.st.he)}<br><span class="sub">${esc(r.st.name)}</span></th>`).join("")}</tr></thead><tbody>
   ${items.map(([c, q]) => { const rs = top.map(r => M[r.sid][c]), vs = rs.map(r => r?.v ?? null), lo = Math.min(...vs.filter(v => v !== null)), many = vs.filter(x => x !== null).length > 1;
-   return `<tr><td>${nm(c)} <span class="sub">×${C.fmtQty(q, kg(c))}</span></td>${rs.map((r, i) => !r ? '<td class="na">—</td>' : `<td class="${many && Math.abs(r.v - lo) < 0.005 ? "cheap" : ""}" ${r.sub ? `title="תחליף: ${esc(S.cat?.[r.sub]?.[0] || "")}"` : ""}>${r.v.toFixed(2)}${r.sub ? " 🔄" : ""}${many && Math.abs(r.v - lo) < 0.005 ? " ✓" : ""}</td>`).join("")}</tr>`; }).join("")}
-  <tr class="sum"><td>סה"כ</td>${top.map(r => `<td>${r.tot.toFixed(2)}${r.missing.length ? `<br><span class="miss">חסרים ${r.missing.length}</span>` : ""}</td>`).join("")}</tr></tbody></table></div>
-  <div class="sub" style="padding:8px 14px">✓ = הכי זול בשורה. 🔄 = תחליף דומה. — = לא נמכר בסניף. ${rows.length > 4 ? `מוצגים ${top.length} הסניפים המובילים מתוך ${rows.length}.` : ""}</div></div>`;
+   return `<tr><td>${nm(c)} <span class="sub">×${C.fmtQty(q, kg(c))}</span></td>${rs.map((r, i) => !r ? `<td class="na">${(a => a !== null ? approx(a.toFixed(2)) : "—")(C.avgPrice(M, stores.map(x => x.sid), c))}</td>` : `<td class="${many && Math.abs(r.v - lo) < 0.005 ? "cheap" : ""}" ${r.sub ? `title="תחליף: ${esc(S.cat?.[r.sub]?.[0] || "")}"` : ""}>${r.v.toFixed(2)}${r.sub ? " 🔄" : ""}${many && Math.abs(r.v - lo) < 0.005 ? " ✓" : ""}</td>`).join("")}</tr>`; }).join("")}
+  <tr class="sum"><td>סה"כ</td>${top.map(r => `<td>${r.missing.length ? approx(r.est.toFixed(2)) : r.est.toFixed(2)}${r.missing.length ? `<br><span class="miss">חסרים ${r.missing.length}</span>` : ""}</td>`).join("")}</tr></tbody></table></div>
+  <div class="sub" style="padding:8px 14px">✓ = הכי זול בשורה. 🔄 = תחליף דומה. ~ = לא נמכר בסניף: המחיר הממוצע בשאר הסניפים, כדי שמוצר חסר לא ייספר כ-0. ${rows.length > 4 ? `מוצגים ${top.length} הסניפים המובילים מתוך ${rows.length}.` : ""}</div></div>`;
 
  const cards = rows.map((r, i) => {
   const isTop = r === bestSingle;
@@ -604,7 +619,8 @@ function compare(cat) {
    + (r.nowhere.length ? `<div class="fill">לא נמכר באף סניף שבחרת: ${r.nowhere.map(nm).join(", ")}</div>` : "");
   return `<div class="box store ${isTop ? "best" : ""}" id="st-${esc(r.sid)}">
   <div class="t"><div class="who"><span class="av" aria-hidden="true">${esc([...r.st.he][0] || "?")}</span><div><div class="name"><span class="rank">${i + 1}</span>${esc(r.st.he)}${isTop ? '<span class="badge">הכי זול בסניף אחד</span>' : ""}</div><div class="sub">${esc(r.st.name)}${staleTag(r.st)}</div></div></div>
-  <div class="price"><span class="total">${ils(r.tot)}</span>${r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
+  <div class="price"><span class="total">${r.missing.length ? approx(ils(r.est)) : ils(r.est)}</span>${!r.missing.length && r.reg - r.tot > 0.005 ? `<span class="reg">${ils(r.reg)}</span>` : ""}</div></div>
+  ${r.missing.length ? `<div class="sub">${ils(r.tot)} על ${n - r.missing.length} המוצרים שיש בסניף, ועוד ${approx(ils(r.estPart))} הערכה ל-${r.missing.length} החסרים (מחיר ממוצע בשאר הסניפים)</div>` : ""}
   ${r.subbed.length ? `<div class="fill">🔄 ${r.subbed.length} ${r.subbed.length === 1 ? "מוצר הוחלף" : "מוצרים הוחלפו"} בדומה: ${r.subbed.map(nm).join(", ")} · פירוט למטה</div>` : ""}
   ${r.missing.length ? `<div class="miss">חסרים ${r.missing.length} מתוך ${n} פריטים: ${r.missing.map(nm).join(", ")}</div>${fillHtml}
    ${r.fillSum ? `<div class="sub"><b>סה"כ כולל השלמה: ${ils(r.full)}</b></div>` : ""}` : ""}
