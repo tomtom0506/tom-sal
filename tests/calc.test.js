@@ -114,3 +114,14 @@ test("pickSub scales the substitute price to the original size", () => {
  const r3 = C.pickSub(f, [["small", 1]], 1, false, T, "orig", { small: [500, "g"] });
  near(r3.v, 9.9);                                    // unknown original size: no scaling
 });
+
+test("missing items are estimated at their average price, never 0", () => {
+ // Tomer: an incomplete basket looked cheap because missing items counted as 0
+ const M = { a: { x: { v: 10 }, y: { v: 6 } }, b: { x: { v: 12 }, y: null }, c: { x: { v: 14 }, y: { v: 8 } } };
+ near(C.avgPrice(M, ["a", "b", "c"], "y"), 7);
+ const e = C.estimate(M, ["a", "b", "c"], "b", ["x", "y"]);
+ near(e.tot, 12); near(e.est, 7); near(e.total, 19); assert.deepStrictEqual(e.missing, ["y"]);
+ // b (12 + ~7 = 19) is no longer cheaper than a (16) just because y is missing
+ assert.ok(C.estimate(M, ["a", "b", "c"], "a", ["x", "y"]).total < e.total);
+ assert.strictEqual(C.avgPrice({ a: { z: null } }, ["a"], "z"), null);
+});
