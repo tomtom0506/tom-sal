@@ -133,3 +133,16 @@ test("pickSub with a merged product as substitute (kg vs unit produce)", () => {
  assert.strictEqual(r.sub, "g:cuc unit"); near(r.v, 8.9);
  assert.strictEqual(C.pickSub(f, [["g:cuc unit", 0.9]], 1, false, T, "g:cuc", {}), null);  // without expand: not found
 });
+
+test("basket import link: round trip, Hebrew group names, validation", () => {
+ const b = { "g:תפוחי אדמה": 1.5, "7290000345307": 2 };
+ const known = c => c in b || c === "g:בצל";
+ assert.deepStrictEqual(C.decodeBasket(C.encodeBasket(b), known), b);
+ assert.match(C.encodeBasket(b), /^[A-Za-z0-9_-]+$/);  // safe in a URL fragment
+ // unknown codes, bad quantities and "_alias" are dropped; nothing usable -> null
+ const bad = C.encodeBasket({ "g:בצל": 1, "999": 1, "g:תפוחי אדמה": "x", "7290000345307": -1, "_alias": 3 });
+ assert.deepStrictEqual(C.decodeBasket(bad, c => c !== "999"), { "g:בצל": 1 });
+ assert.strictEqual(C.decodeBasket(C.encodeBasket({ "g:בצל": 1000 }), known), null);
+ assert.strictEqual(C.decodeBasket("%%%", known), null);
+ assert.strictEqual(C.decodeBasket(C.encodeBasket([1, 2]), known), null);
+});
