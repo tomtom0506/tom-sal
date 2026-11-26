@@ -146,3 +146,33 @@ test("basket import link: round trip, Hebrew group names, validation", () => {
  assert.strictEqual(C.decodeBasket("%%%", known), null);
  assert.strictEqual(C.decodeBasket(C.encodeBasket([1, 2]), known), null);
 });
+
+test("receipt OCR: barcode/qty columns -> items", () => {
+ const cat = new Set(["7290000345307", "5000108478119", "g:גזר", "g:בצל"]);
+ const grp = { "7290009000313": "g:גזר", "7290009000900": "g:בצל" };
+ const resolve = raw => {
+  const d = raw.replace(/\D/g, "");
+  for (const x of [d, d[1] !== "0" ? d.slice(1) : ""]) {
+   if (x.length < 5) continue;
+   for (const c of [x, x.length < 13 ? "729" + x.padStart(10, "0") : null]) if (c && (grp[c] || cat.has(c))) return grp[c] || c;
+  }
+  return null;
+ };
+ const pages = [
+  { code: [{ t: "1410", y: 380 }, { t: "5000108478119", y: 775 }, { t: "7345307", y: 860 }, { t: ".9000900", y: 950 }, { t: "9000313", y: 2200 }],
+    qty: [{ t: "32", y: 385 }, { t: "2", y: 775 }, { t: "1", y: 860 }, { t: "0.79", y: 935 }, { t: "10", y: 1000 }] },
+  // the carrot's weight was printed on the next page, above its first barcode
+  { code: [{ t: "345307", y: 300 }, { t: "1234567", y: 400 }], qty: [{ t: "1.19", y: 90 }, { t: "3", y: 300 }] },
+ ];
+ const r = C.receiptItems(pages, resolve);
+ assert.deepStrictEqual(r.items, [["5000108478119", 2], ["7290000345307", 1], ["g:בצל", 0.79], ["g:גזר", 1.19], ["7290000345307", 3], ]);
+ assert.strictEqual(r.unknown, 1);  // "1234567" (the header's "1410" has too few digits to be a code)
+});
+
+test("several receipts -> average per receipt the product appears in", () => {
+ const isKg = c => c.startsWith("g:");
+ const out = C.avgReceipts([[["a", 4], ["g:x", 1.17], ["c", 2], ["c", 1]], [["a", 2], ["g:x", 1.19], ["b", 1]]], isKg);
+ assert.deepStrictEqual(out, { a: 3, "g:x": 1.2, c: 3, b: 1 });
+ assert.deepStrictEqual(C.avgReceipts([[["a", 1]], [["a", 2]]], isKg), { a: 2 });  // 1.5 -> 2 (whole units)
+ assert.deepStrictEqual(C.avgReceipts([[["g:y", 0.03]]], isKg), { "g:y": 0.1 });
+});
