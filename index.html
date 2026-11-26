@@ -184,8 +184,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.8.4";
+const VERSION = "1.9.0";
 const CHANGELOG = [
+ ["1.9.0", "26.11.2026", ["אפשר לטעון סל שלם מקישור: האפליקציה שואלת לפני שהיא מחליפה את הסל הקיים", "הקישור נקרא רק בטלפון ולא נשלח לשום שרת"]],
  ["1.8.4", "23.11.2026", ["חלב, תפוחי אדמה ומלפפון נמצאים גם ברשתות שבהן לא נמצאו קודם, למשל ביוחננוף", "מוצר ששמו נקטע בקובץ הרשת (\"חלב תנובה 3% שומן 1\") מקבל את הגודל שלו לפי יחידת המידה שהרשת פרסמה, ולכן מקבל תחליף דומה", "מילים כמו \"שומן\" ו\"טרי\" לא מונעות יותר התאמה בין \"חלב תנובה 3% שומן\" ל\"טרה חלב 3%\"", "תפוח אדמה לבן, קטן או גורמה הוא תפוח אדמה רגיל", "ירק שנמכר בסניף אחד לק\"ג ובסניף אחר ליחידה או באריזה מוצע כתחליף, כשהמחירים קרובים", "מוצר שהוספת לסל לפי ברקוד ובינתיים אוחד עם מוצרים דומים עובר אוטומטית למוצר המאוחד"]],
  ["1.8.3", "23.11.2026", ["תיקון: מוצר שעבר לשם חדש (למשל \"תפוח אדמה לאפיה\" שהפך ל\"תפוחי אדמה\") הופיע בסל עם כמות NaN ולא היה אפשר למחוק אותו. עכשיו הוא עובר לשם החדש בלי כפילות, וכמות לא תקינה שנשמרה בטלפון מתנקה אוטומטית"]],
  ["1.8.2", "23.11.2026", ["מוצר שחסר בסניף לא נספר יותר כ-0: בסכום הכולל, בטבלה ובגרף הוא נספר לפי המחיר הממוצע שלו בשאר הסניפים שבחרת, ומסומן ב-~. כך סניף שחסרים בו מוצרים לא נראה זול יותר בטעות", "תפוחי אדמה: גם \"תפוח אדמה\" (ביחיד, כמו באושר עד) מזוהה, ולכן מופיע תפוח האדמה הרגיל ולא רק זן מיוחד ויקר", "בשר טחון: אריזה ששמה נקטע בקובץ הרשת (\"1.2 ק\"\") נספרת לפי ק\"ג. באושר עד, למשל, מוצג ₪37.42 לק\"ג במקום ₪89.80", "דג קפוא ששמו נקטע (\"קפ\") לא נספר יותר כדג טרי", "טווח המחירים הסביר בתוך מוצר מאוחד הורחב, כדי שבשר טחון זול לא יוצא מההשוואה"]],
@@ -325,7 +326,30 @@ const C = (() => {
   for (const c of items) { const r = M[sid][c]; if (r) tot += r.v; else { const a = avgPrice(M, sids, c); if (a !== null) { est += a; missing.push(c); } } }
   return { tot, est, total: tot + est, missing };
  }
- return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice, avgPrice, estimate };
+ // basket import link: "#sal=" + base64url(UTF-8 JSON {code: qty}). Only codes in the catalog (or merged into one
+ // of its products) and sane quantities are kept; anything else is dropped. Returns null when nothing usable.
+ function encodeBasket(b) {
+  const bytes = new TextEncoder().encode(JSON.stringify(b)); let bin = "";
+  for (const x of bytes) bin += String.fromCharCode(x);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+ }
+ function decodeBasket(str, known) {
+  let o;
+  try {
+   const bin = atob(String(str).replace(/-/g, "+").replace(/_/g, "/"));
+   o = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))));
+  } catch { return null; }
+  if (!o || typeof o !== "object" || Array.isArray(o)) return null;
+  const out = {}; let n = 0;
+  for (const [c, q] of Object.entries(o)) {
+   if (n >= 300) break;
+   if (typeof c !== "string" || c.length > 120 || c === "_alias" || !known(c)) continue;
+   const v = +q; if (!Number.isFinite(v) || v <= 0 || v > 100) continue;
+   out[c] = Math.round(v * 100) / 100; n++;
+  }
+  return n ? out : null;
+ }
+ return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice, avgPrice, estimate, encodeBasket, decodeBasket };
 })();
 // ==calc-end==
 
@@ -353,20 +377,41 @@ async function catalog() {
   S.cat = await getJSON("data/catalog.json");
   // products merged under a new name since the basket was saved: move them to the new name. That covers
   // renamed groups and single products (a barcode) that have since joined a merged product
-  const al = S.cat._alias || {}; let moved = false, owner = null;
-  const groupOf = c => {
-   if (!owner) { owner = {}; for (const g in S.cat) if (g.startsWith("g:")) for (const m of S.cat[g][5]) owner[m] = g; }
-   return owner[c];
-  };
-  for (const c of Object.keys(S.basket)) {
-   const nw = c.startsWith("g:") ? (al[c.slice(2)] ? "g:" + al[c.slice(2)] : null) : (!S.cat[c] ? groupOf(c) : null);
-   if (nw && S.cat[nw]) { S.basket[nw] = (+S.basket[nw] || 0) + (+S.basket[c] || 1); delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
-  }
-  if (moved) { store("basket", S.basket); store("exact", [...S.exact]); }
+  migrate();
   if ($("q").value.trim().length < 2) $("res").innerHTML = "";
  }
  return S.cat;
 }
+// products merged under a new name since the basket was saved (or since an import link was made)
+let owner = null;
+const groupOf = c => {
+ if (!owner) { owner = {}; for (const g in S.cat) if (g.startsWith("g:")) for (const m of S.cat[g][5]) owner[m] = g; }
+ return owner[c];
+};
+function migrate() {
+ const al = S.cat._alias || {}; let moved = false;
+ for (const c of Object.keys(S.basket)) {
+  const nw = c.startsWith("g:") ? (al[c.slice(2)] ? "g:" + al[c.slice(2)] : null) : (!S.cat[c] ? groupOf(c) : null);
+  if (nw && S.cat[nw]) { S.basket[nw] = (+S.basket[nw] || 0) + (+S.basket[c] || 1); delete S.basket[c]; if (S.exact.delete(c)) S.exact.add(nw); moved = true; }
+ }
+ if (moved) { store("basket", S.basket); store("exact", [...S.exact]); }
+}
+// a basket shared as a link (#sal=...): replace the basket only after the user confirms. The fragment never
+// leaves the browser (it is not sent to any server); it is removed from the address bar right away.
+async function importLink() {
+ const m = location.hash.match(/^#sal=([A-Za-z0-9_-]+)$/);
+ if (!m) return;
+ history.replaceState(null, "", location.pathname + location.search);
+ try { await catalog(); } catch { return; }
+ const al = S.cat._alias || {};
+ const b = C.decodeBasket(m[1], c => !!S.cat[c] || (c.startsWith("g:") && !!al[c.slice(2)]) || !!groupOf(c));
+ if (!b) { alert("הקישור לא מכיל סל תקין."); return; }
+ const n = Object.keys(b).length, had = Object.keys(S.basket).length;
+ if (!confirm(had ? `להחליף את הסל הנוכחי (${had} מוצרים) בסל מהקישור (${n} מוצרים)?` : `להוסיף לסל ${n} מוצרים מהקישור?`)) return;
+ S.basket = b; S.exact = new Set(); store("exact", []); store("basket", S.basket); migrate();
+}
+// the app already open in this tab: opening the link only changes the fragment, the page does not reload
+addEventListener("hashchange", () => { if (location.hash.startsWith("#sal=")) importLink().then(() => tab("b")); });
 const known = sid => S.stores.some(s => s.sid === sid);
 // one failing store file must not blank the whole basket: load what we can, remember what failed
 // substitutes are only needed for the comparison: load once, never block the basket on them
@@ -788,7 +833,8 @@ getJSON("data/stores.json").then(d => {
  S.stores = d.stores; S.updated = d.updated || "";
  $("upd").textContent = S.updated ? "נתוני " + S.updated.split("-").reverse().join(".") : "";
  // a store missing from today's data stays selected: it comes back when its chain publishes again
- renderStores(); $("ncl").textContent = clubCount() ? `(${clubCount()})` : ""; if (![...S.sel].some(known)) tab(false); else renderBasket();
+ renderStores(); $("ncl").textContent = clubCount() ? `(${clubCount()})` : "";
+ importLink().finally(() => { if (![...S.sel].some(known)) tab(false); else tab("b"); });
 }).catch(() => { $("bask").innerHTML = '<div class="empty">הנתונים עדיין לא זמינים. נסה שוב אחרי הריצה הלילית.</div>'; });
 </script>
 </body>
