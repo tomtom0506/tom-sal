@@ -89,9 +89,9 @@ details.bk>summary .lnk{margin-inline-start:auto}
 [data-view]{cursor:pointer}
 .addbig{display:block;width:100%;margin:12px 0 6px;background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:12px;padding:11px;font:inherit;font-size:16px}
 .sbox{position:relative}
-.sbox input{padding-inline-end:100px}
+.sbox input{padding-inline-end:148px}
 .sbox input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
-.clrb{position:absolute;inset-inline-end:54px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:50%;background:var(--line);color:var(--text);font-size:17px}
+.clrb{position:absolute;inset-inline-end:102px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:50%;background:var(--line);color:var(--text);font-size:17px}
 .clrb.hidden{display:none}
 .scanb{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:42px;height:38px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:19px}
 #scan{position:fixed;inset:0;z-index:12;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
@@ -114,6 +114,14 @@ details.bk>summary .lnk{margin-inline-start:auto}
 #modal h3{margin:0 0 6px;font-size:19px}
 #modal h4{margin:16px 0 4px;font-size:15px}
 #modal p,#modal li{font-size:15px;line-height:1.6;margin:4px 0}
+.rcptb{inset-inline-end:54px}
+.rc-list label{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+.rc-list label .q{margin-inline-start:auto;color:var(--muted);white-space:nowrap}
+.rc-act{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.rc-act button{flex:1;min-width:130px;border:0;border-radius:12px;padding:11px;font:inherit;font-size:15px;background:var(--navy);color:#fff}
+.rc-act button.alt{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+.rc-prog{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:12px 0}
+.rc-prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}
 #modal .close{float:left;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:50%;width:32px;height:32px;font-size:16px}
 .cl{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
 .cl b{color:var(--gold)}
@@ -171,7 +179,7 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 </header>
 <main>
  <section id="vb">
-  <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="clrb hidden" id="clrb" aria-label="ניקוי החיפוש">✕</button><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button></div>
+  <div class="sbox"><input type="search" id="q" placeholder="חיפוש מוצר או ברקוד" autocomplete="off"><button class="clrb hidden" id="clrb" aria-label="ניקוי החיפוש">✕</button><button class="scanb rcptb" id="rcptb" aria-label="הוספה מחשבונית" title="הוספה מחשבונית PDF">📄</button><button class="scanb" id="scanb" aria-label="סריקת ברקוד">📷</button><input type="file" id="rcptf" accept="application/pdf,.pdf" multiple hidden></div>
   <div id="res"></div>
   <div id="bask"></div>
   <div class="sub" id="clubnote" style="margin-top:12px"></div>
@@ -184,8 +192,9 @@ table.mx{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 <div id="toast" class="hidden"></div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <script>
-const VERSION = "1.9.0";
+const VERSION = "1.10.0";
 const CHANGELOG = [
+ ["1.10.0", "26.11.2026", ["כפתור 📄 ליד החיפוש: הוספת מוצרים לסל מחשבונית PDF דיגיטלית של אושר עד, אחת או כמה ביחד", "לפני ההוספה מוצגת רשימת המוצרים שזוהו, ואפשר לבטל מוצרים שלא שייכים לסל הקבוע", "החשבונית נקראת בטלפון ולא נשלחת לשום מקום"]],
  ["1.9.0", "26.11.2026", ["אפשר לטעון סל שלם מקישור: האפליקציה שואלת לפני שהיא מחליפה את הסל הקיים", "הקישור נקרא רק בטלפון ולא נשלח לשום שרת"]],
  ["1.8.4", "23.11.2026", ["חלב, תפוחי אדמה ומלפפון נמצאים גם ברשתות שבהן לא נמצאו קודם, למשל ביוחננוף", "מוצר ששמו נקטע בקובץ הרשת (\"חלב תנובה 3% שומן 1\") מקבל את הגודל שלו לפי יחידת המידה שהרשת פרסמה, ולכן מקבל תחליף דומה", "מילים כמו \"שומן\" ו\"טרי\" לא מונעות יותר התאמה בין \"חלב תנובה 3% שומן\" ל\"טרה חלב 3%\"", "תפוח אדמה לבן, קטן או גורמה הוא תפוח אדמה רגיל", "ירק שנמכר בסניף אחד לק\"ג ובסניף אחר ליחידה או באריזה מוצע כתחליף, כשהמחירים קרובים", "מוצר שהוספת לסל לפי ברקוד ובינתיים אוחד עם מוצרים דומים עובר אוטומטית למוצר המאוחד"]],
  ["1.8.3", "23.11.2026", ["תיקון: מוצר שעבר לשם חדש (למשל \"תפוח אדמה לאפיה\" שהפך ל\"תפוחי אדמה\") הופיע בסל עם כמות NaN ולא היה אפשר למחוק אותו. עכשיו הוא עובר לשם החדש בלי כפילות, וכמות לא תקינה שנשמרה בטלפון מתנקה אוטומטית"]],
@@ -349,7 +358,48 @@ const C = (() => {
   }
   return n ? out : null;
  }
- return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice, avgPrice, estimate, encodeBasket, decodeBasket };
+ // ---- receipts (digital PDF receipts, Pairzon layout as used by Osher Ad) ----
+ // OCR returns, per page, the text lines of the barcode column and of the quantity column, with their height.
+ // The barcode is printed flush against the item name, so a column crop can catch one stray character in front:
+ // resolve() tries the digits as read and without their first digit. A quantity printed at the top of a page,
+ // before its first barcode, belongs to the last item of the previous page (the row was split by the page break).
+ // Returns { items: [[code, qty]], unknown: n }.
+ function receiptItems(pages, resolve) {
+  const items = []; let unknown = 0, last = null;
+  const isQty = t => /^\d{1,3}(\.\d{1,3})?$/.test(t);
+  for (const pg of pages) {
+   const codes = pg.code.filter(l => /\d{5,}/.test(l.t));
+   if (!codes.length) continue;
+   const first = codes[0].y;
+   const orphan = pg.qty.filter(l => isQty(l.t) && l.y < first - 45).pop();
+   if (orphan && last && last.split) { last.row[1] = +orphan.t; last.split = false; }
+   codes.forEach((k, i) => {
+    const hi = i + 1 < codes.length ? codes[i + 1].y : Infinity;
+    const q = pg.qty.filter(l => isQty(l.t) && Math.abs(l.y - k.y) < 45 && l.y < hi - 20)
+     .sort((a, b) => Math.abs(a.y - k.y) - Math.abs(b.y - k.y))[0];
+    const code = resolve(k.t);
+    if (!code) { unknown++; last = null; return; }
+    const row = [code, q ? +q.t : 1];
+    items.push(row);
+    last = { row, split: !q && i === codes.length - 1 };
+   });
+  }
+  return { items, unknown };
+ }
+ // several receipts -> one typical basket: per product, the average over the receipts it appears in.
+ // weighed products keep kg (0.1 kg steps), others whole units (at least 1)
+ function avgReceipts(list, isKg) {
+  const sum = {}, n = {};
+  for (const items of list) {
+   const one = {};
+   for (const [c, q] of items) one[c] = (one[c] || 0) + q;
+   for (const c in one) { sum[c] = (sum[c] || 0) + one[c]; n[c] = (n[c] || 0) + 1; }
+  }
+  const out = {};
+  for (const c in sum) { const a = sum[c] / n[c]; out[c] = isKg(c) ? Math.max(0.1, Math.round(a * 10) / 10) : Math.max(1, Math.round(a)); }
+  return out;
+ }
+ return { rate, isClub, promoOk, promoLine, bestIn, bestPair, kgStep, fmtQty, pickSub, unitPrice, avgPrice, estimate, encodeBasket, decodeBasket, receiptItems, avgReceipts };
 })();
 // ==calc-end==
 
@@ -410,6 +460,108 @@ async function importLink() {
  if (!confirm(had ? `להחליף את הסל הנוכחי (${had} מוצרים) בסל מהקישור (${n} מוצרים)?` : `להוסיף לסל ${n} מוצרים מהקישור?`)) return;
  S.basket = b; S.exact = new Set(); store("exact", []); store("basket", S.basket); migrate();
 }
+// ---- add from receipt: PDF -> image (pdf.js) -> OCR of the barcode and quantity columns (tesseract.js) ----
+// Everything runs on the phone: the receipt is never uploaded. The libraries are served from this site (vendor/),
+// not from a third-party CDN, and are downloaded only the first time the button is used.
+const VEND = p => new URL("vendor/" + p, location.href).href;
+let ocrLibs = null;
+function loadOcr() {
+ return ocrLibs ||= (async () => {
+  const pdfjs = await import(VEND("pdfjs/pdf.min.mjs"));
+  pdfjs.GlobalWorkerOptions.workerSrc = VEND("pdfjs/pdf.worker.min.mjs");
+  await new Promise((ok, bad) => { const sc = document.createElement("script"); sc.src = VEND("ocr/tesseract.min.js"); sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+  const worker = await Tesseract.createWorker("eng", 1, { workerPath: VEND("ocr/worker.min.js"), corePath: VEND("ocr/"), langPath: VEND("ocr"), workerBlobURL: false });
+  await worker.setParameters({ tessedit_char_whitelist: "0123456789.", tessedit_pageseg_mode: "6" });
+  return { pdfjs, worker };
+ })().catch(e => { ocrLibs = null; throw e; });
+}
+// column positions as a share of the page width (the receipt is a fixed-width monospace layout)
+const RCOLS = { code: [0.619, 0.869], qty: [0.259, 0.384] };
+async function ocrReceipt(file, onPage) {
+ const { pdfjs, worker } = await loadOcr();
+ const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+ try {
+  const head = (await (await doc.getPage(1)).getTextContent()).items.map(i => i.str).join(" ");
+  if (!/pairzon/i.test(head)) throw new Error("format");
+  const pages = [];
+  for (let n = 1; n <= Math.min(doc.numPages, 20); n++) {
+   onPage(n, doc.numPages);
+   const page = await doc.getPage(n), v0 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: 1563 / v0.width });
+   const cv = document.createElement("canvas"); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+   const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+   await page.render({ canvasContext: cx, viewport: vp }).promise;
+   const pg = {};
+   for (const [k, [a, b]] of Object.entries(RCOLS)) {
+    const { data } = await worker.recognize(cv, { rectangle: { left: Math.round(a * cv.width), top: 0, width: Math.round((b - a) * cv.width), height: cv.height } }, { blocks: true });
+    pg[k] = [];
+    for (const bl of data.blocks || []) for (const pa of bl.paragraphs) for (const li of pa.lines) pg[k].push({ t: li.text.replace(/\s+/g, ""), y: (li.bbox.y0 + li.bbox.y1) / 2 });
+   }
+   pages.push(pg);
+  }
+  return pages;
+ } finally { doc.destroy(); }
+}
+// a code read from the receipt -> a catalog entry (a merged product when the barcode belongs to one).
+// Osher Ad prints short internal codes that are the chain's barcode without its "729" + zeros prefix.
+// Deposits / recycling fees are not products.
+const NOT_ITEM = /מיחזור|פיקדון|פקדון|פקדונות/;
+// a 13-digit barcode read by OCR must pass the EAN-13 check digit: one misread digit must not land on another product
+const ean13 = x => { let s = 0; for (let i = 0; i < 12; i++) s += +x[i] * (i % 2 ? 3 : 1); return (10 - s % 10) % 10 === +x[12]; };
+function resolveCode(raw) {
+ const d = String(raw).replace(/\D/g, "");
+ for (const x of [d, d[1] !== "0" ? d.slice(1) : ""]) {
+  if (x.length < 5 || x.length > 13 || (x.length === 13 && !ean13(x))) continue;
+  for (const c of [x, x.length < 13 ? "729" + x.padStart(10, "0") : null]) {
+   if (!c) continue;
+   const k = groupOf(c) || (S.cat[c] && c);
+   if (k) return NOT_ITEM.test(S.cat[k][0] || "") ? null : k;
+  }
+ }
+ return null;
+}
+let rcpt = null;  // { basket, unknown, files }
+async function readReceipts(files) {
+ const bar = () => '<div class="rc-prog"><i id="rcbar"></i></div><p class="sub" id="rcmsg">טוען את כלי הזיהוי… (בפעם הראשונה כ-8MB)</p>';
+ openModal("<h3>📄 קריאת חשבונית</h3><p class='sub'>הקריאה נעשית בטלפון. החשבונית לא נשלחת לשום מקום.</p>" + bar());
+ try {
+  await catalog();
+  const list = []; let unknown = 0, bad = [];
+  for (let i = 0; i < files.length; i++) {
+   try {
+    const pages = await ocrReceipt(files[i], (n, of) => {
+     if (!$("rcmsg")) return;
+     $("rcmsg").textContent = `חשבונית ${i + 1} מתוך ${files.length} · עמוד ${n} מתוך ${of}`;
+     $("rcbar").style.width = Math.round(100 * (i + n / of) / files.length) + "%";
+    });
+    const r = C.receiptItems(pages, resolveCode);
+    if (r.items.length) list.push(r.items); else bad.push(files[i].name);
+    unknown += r.unknown;
+   } catch (e) { bad.push(files[i].name + (e.message === "format" ? " (פורמט לא נתמך)" : "")); }
+  }
+  if (!list.length) { openModal(`<h3>📄 קריאת חשבונית</h3><p>לא זוהו מוצרים.</p><p class="sub">כרגע נתמכות חשבוניות PDF דיגיטליות של אושר עד (Pairzon). ${bad.length ? "לא נקראו: " + esc(bad.join(", ")) : ""}</p>`); return; }
+  rcpt = { basket: C.avgReceipts(list, kg), unknown, n: list.length, bad };
+  showReceipt();
+ } catch (e) {
+  openModal(`<h3>📄 קריאת חשבונית</h3><p>לא הצלחתי לטעון את כלי הזיהוי. בדוק את החיבור ונסה שוב.</p>`);
+ }
+}
+function showReceipt() {
+ const b = rcpt.basket, codes = Object.keys(b).sort((x, y) => nmRaw(x).localeCompare(nmRaw(y), "he")), had = Object.keys(S.basket).length;
+ openModal(`<h3>📄 ${codes.length} מוצרים זוהו${rcpt.n > 1 ? ` ב-${rcpt.n} חשבוניות` : ""}</h3>
+  <p class="sub">בטל סימון של מוצר שלא שייך לסל הקבוע.${rcpt.n > 1 ? " הכמות היא ממוצע לקנייה." : ""}${rcpt.unknown ? ` ${rcpt.unknown} שורות לא זוהו בקטלוג.` : ""}${rcpt.bad.length ? " לא נקראו: " + esc(rcpt.bad.join(", ")) + "." : ""}</p>
+  <div class="rc-list">${codes.map(c => `<label><input type="checkbox" data-rc="${esc(c)}" checked><span>${esc(nmRaw(c))}</span><span class="q">${C.fmtQty(b[c], kg(c))}</span></label>`).join("")}</div>
+  <div class="rc-act"><button id="rcadd">הוסף לסל</button>${had ? `<button class="alt" id="rcrep">החלף את הסל (${had} מוצרים)</button>` : ""}</div>`);
+}
+$("sheet").addEventListener("click", e => {
+ const id = e.target.id; if (id !== "rcadd" && id !== "rcrep" || !rcpt) return;
+ const keep = [...document.querySelectorAll("[data-rc]")].filter(x => x.checked).map(x => x.dataset.rc);
+ if (!keep.length) return;
+ if (id === "rcrep") { if (!confirm(`להחליף את הסל ב-${keep.length} מוצרים מהחשבונית?`)) return; S.basket = {}; S.exact = new Set(); store("exact", []); }
+ for (const c of keep) S.basket[c] = +(((+S.basket[c] || 0) + rcpt.basket[c]).toFixed(2));
+ store("basket", S.basket); rcpt = null; closeModal(); tab("b");
+});
+$("rcptb").onclick = () => $("rcptf").click();
+$("rcptf").onchange = e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) readReceipts(f.slice(0, 10)); };
 // the app already open in this tab: opening the link only changes the fragment, the page does not reload
 addEventListener("hashchange", () => { if (location.hash.startsWith("#sal=")) importLink().then(() => tab("b")); });
 const known = sid => S.stores.some(s => s.sid === sid);
@@ -777,6 +929,7 @@ $("help").onclick = () => openModal(`<h3>מדריך</h3>
  <p>האפליקציה משווה כמה יעלה הסל שלך בכל סניף באזור, לפי קובצי המחירים שהרשתות חייבות לפרסם לפי חוק.</p>
  <h4>1. בחירת סניפים</h4><p>בלשונית "סניפים" מסמנים את הסניפים שאתה קונה בהם או מוכן להגיע אליהם. אפשר לסנן לפי שם, ולסמן את כל סניפי הרשת בלחיצה על "סמן הכול". הבחירה נשמרת בטלפון.</p>
  <h4>2. בניית סל</h4><p>בלשונית "סל" מחפשים מוצר בשם או במספר ברקוד, או סורקים ברקוד במצלמה 📷, ולוחצים + . בכל תוצאה מופיע המחיר הכי נמוך בסניפים שבחרת ובכמה סניפים המוצר נמכר. לחיצה על שם המוצר מציגה גרף של המחיר שלו בכל סניף. את הכמות משנים עם + ו־−. מוצרים במשקל עולים בחצי ק"ג.</p>
+ <h4>הוספה מחשבונית 📄</h4><p>כפתור 📄 ליד החיפוש קורא חשבונית PDF דיגיטלית (כרגע של אושר עד) ומוסיף לסל את המוצרים שבה. אפשר לבחור כמה חשבוניות ביחד, ואז הכמות היא ממוצע לקנייה. לפני ההוספה מוצגת רשימה, ואפשר לבטל בה מוצרים חד-פעמיים. הקריאה נעשית בטלפון והחשבונית לא נשלחת לשום מקום. בשימוש הראשון יורד כלי הזיהוי (כ-8MB).</p>
  <h4>3. קריאת ההשוואה</h4><ul>
   <li>למעלה: הסל המלא הכי זול, כמה חוסכים לעומת הסניף היקר, והמחיר הממוצע.</li>
   <li>💡 המלצה: הכול בסניף אחד, או חלוקה בין שני סניפים כשזה חוסך מספיק.</li>
